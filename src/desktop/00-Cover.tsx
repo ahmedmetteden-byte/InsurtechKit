@@ -6,6 +6,8 @@
  * Communicates brand identity, kit scope, and customisation steps.
  */
 
+import { branding } from '../config/branding'
+
 interface Props {
     onEnter: () => void
   }
@@ -109,14 +111,14 @@ interface Props {
           <header style={{ padding: 'clamp(24px,3.5%,60px) clamp(32px,5%,96px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 1 }}>
             {/* Logo lockup */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px,1.5%,18px)' }}>
-              <div style={{ width: 'clamp(32px,3.5vw,52px)', height: 'clamp(32px,3.5vw,52px)', borderRadius: 'clamp(8px,1vw,14px)', background: 'linear-gradient(135deg, #1D4ED8, #1E3A8A)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 'clamp(32px,3.5vw,52px)', height: 'clamp(32px,3.5vw,52px)', borderRadius: 'clamp(8px,1vw,14px)', background: `linear-gradient(135deg, ${branding.primaryColor}, #1E3A8A)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: '55%', height: '55%' }}>
                   <path d="M12 2l9 5v6c0 5-4 9-9 10C7 22 3 18 3 13V7l9-5z" />
                 </svg>
               </div>
               <div>
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(16px,2vw,28px)', letterSpacing: '-0.04em', color: 'white', lineHeight: 1 }}>InsureNG</p>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(8px,0.7vw,11px)', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>White-Label Platform Kit</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(16px,2vw,28px)', letterSpacing: '-0.04em', color: 'white', lineHeight: 1 }}>{branding.companyName}</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(8px,0.7vw,11px)', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>{branding.kitLabel}</p>
               </div>
             </div>
   

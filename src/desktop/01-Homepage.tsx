@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Icon } from '../icons'
+import { branding } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (p: Page) => void }
@@ -370,7 +371,7 @@ function HowItWorks({ onNavigate }: Props) {
             <Eyebrow>How It Works</Eyebrow>
             <H2>From quote to certificate in under 5 minutes</H2>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 16, color: '#64748B', lineHeight: 1.75, marginBottom: 32 }}>
-              InsureNG removes every friction point from traditional insurance. No brokers, no offices, no waiting — just fast, transparent digital cover.
+              {branding.companyName} removes every friction point from traditional insurance. No brokers, no offices, no waiting — just fast, transparent digital cover.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={() => onNavigate('product')} style={{ padding: '13px 24px', borderRadius: 10, background: '#1D4ED8', color: 'white', fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(29,78,216,0.35)' }}>
@@ -438,7 +439,7 @@ function Testimonials() {
   const reviews = [
     {
       name: 'Emeka Okafor', role: 'Business Owner', location: 'Lagos Island',
-      quote: "Filed my motor claim after an accident on the Third Mainland Bridge. InsureNG processed it in under 18 hours. I've never experienced anything like it with insurance in Nigeria.",
+      quote: `Filed my motor claim after an accident on the Third Mainland Bridge. ${branding.companyName} processed it in under 18 hours. I've never experienced anything like it with insurance in Nigeria.`,
       rating: 5, product: 'Motor — Comprehensive', color: '#1D4ED8', initials: 'EO',
     },
     {
@@ -541,7 +542,7 @@ function AppBanner({ onNavigate: _onNavigate }: Props) {
               </div>
               <div style={{ padding: '12px', height: '100%', background: 'linear-gradient(160deg, #1E3A8A 0%, #1D4ED8 50%, #15803D 100%)' }}>
                 <div style={{ marginBottom: 8 }}>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, color: 'white' }}>InsureNG</p>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, color: 'white' }}>{branding.companyName}</p>
                   <p style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.5)' }}>Policy #{n === 1 ? '00847' : '01203'}</p>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 10, marginBottom: 8 }}>

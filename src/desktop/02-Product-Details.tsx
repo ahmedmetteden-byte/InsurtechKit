@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
+import { branding } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (p: Page) => void }
@@ -201,13 +202,13 @@ function PricingCalculator({ productId }: { productId: string }) {
 
 // ── FAQ ───────────────────────────────────────────────────────────────────────
 const faqData = [
-  { q: 'Is motor insurance legally required in Nigeria?', a: "Yes. The Motor Vehicles (Third Party Insurance) Act mandates third-party liability cover for every vehicle on Nigerian roads. Driving without a valid certificate is a criminal offence punishable by fine or imprisonment. InsureNG issues NAICOM-approved certificates instantly upon payment." },
+  { q: 'Is motor insurance legally required in Nigeria?', a: `Yes. The Motor Vehicles (Third Party Insurance) Act mandates third-party liability cover for every vehicle on Nigerian roads. Driving without a valid certificate is a criminal offence punishable by fine or imprisonment. ${branding.companyName} issues NAICOM-approved certificates instantly upon payment.` },
   { q: 'How quickly do I receive my insurance certificate?', a: "Your NAICOM-approved certificate is emailed and SMS'd within 5 minutes of successful payment. A PDF is also available immediately in your dashboard for download, printing, or sharing with FRSC officers." },
   { q: 'Can I pay my premium in monthly instalments?', a: "Yes. Monthly, quarterly, and annual payment options are available. Monthly payments incur a 2% administrative charge. All payments are processed through CBN-approved gateways (Paystack, Flutterwave, NIBSS)." },
   { q: 'What documents are required for motor insurance?', a: "Vehicle registration number, proof of ownership (vehicle licence), driver's licence, and BVN or NIN for identity verification. No physical document submission needed — everything is done digitally." },
   { q: 'How does the claims process work?', a: "Log into your dashboard, click 'File a Claim', select your policy, upload photos, and submit. Claims are acknowledged within 1 hour and most are resolved within 24 hours. You receive real-time SMS updates at every stage." },
   { q: 'What is the difference between Third-Party and Comprehensive cover?', a: "Third-Party Only covers damage or injury you cause to others. It does NOT cover your own vehicle. Comprehensive cover includes third-party liability plus damage to your own vehicle from accidents, fire, theft, flood, and vandalism." },
-  { q: 'Is InsureNG regulated by NAICOM?', a: "Yes. InsureNG is licensed by the National Insurance Commission (NAICOM), Licence No. IA-2024-0089. All underwriting is performed by NAICOM-approved insurers. In case of dispute, you may escalate to the Nigerian Insurance Ombudsman at no cost." },
+  { q: `Is ${branding.companyName} regulated by NAICOM?`, a: `Yes. ${branding.companyName} is licensed by the National Insurance Commission (NAICOM), Licence No. ${branding.licenceNo}. All underwriting is performed by NAICOM-approved insurers. In case of dispute, you may escalate to the Nigerian Insurance Ombudsman at no cost.` },
   { q: 'Can I cover my vehicle if it is over 10 years old?', a: "Yes. We cover vehicles up to 20 years old. Premium rates are adjusted for vehicle age using a standard depreciation schedule. For vehicles over 15 years, Comprehensive cover is available on a market-value basis only." },
 ]
 
@@ -225,9 +226,9 @@ function FAQ({ color }: { color: string }) {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              { icon: Icon.phone, label: 'Toll-free Hotline', val: '0800-INSURE-NG', bg: '#EFF6FF', bc: '#BFDBFE', ic: '#1D4ED8' },
-              { icon: Icon.whatsapp, label: 'WhatsApp', val: '+234 901 000 0000', bg: '#F0FDF4', bc: '#BBF7D0', ic: '#16A34A' },
-              { icon: Icon.mail, label: 'Email', val: 'hello@insureng.com.ng', bg: '#F5F3FF', bc: '#DDD6FE', ic: '#7C3AED' },
+              { icon: Icon.phone, label: 'Toll-free Hotline', val: branding.supportPhone, bg: '#EFF6FF', bc: '#BFDBFE', ic: '#1D4ED8' },
+              { icon: Icon.whatsapp, label: 'WhatsApp', val: branding.whatsapp, bg: '#F0FDF4', bc: '#BBF7D0', ic: '#16A34A' },
+              { icon: Icon.mail, label: 'Email', val: branding.supportEmail, bg: '#F5F3FF', bc: '#DDD6FE', ic: '#7C3AED' },
             ].map(c => (
               <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: c.bg, border: `1px solid ${c.bc}` }}>
                 <div style={{ width: 18, height: 18, color: c.ic }}>{c.icon}</div>
@@ -371,7 +372,7 @@ export default function ProductPage({ onNavigate }: Props) {
               <div>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: '#1E3A8A', marginBottom: 3 }}>NAICOM Compliance Guarantee</p>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#1E40AF', lineHeight: 1.55 }}>
-                  All policies issued under NAICOM Licence No. IA-2024-0089. Disputes may be escalated to the Nigerian Insurance Ombudsman at <span style={{ color: '#1D4ED8' }}>complaints@naicom.gov.ng</span> free of charge.
+                  All policies issued under NAICOM Licence No. {branding.licenceNo}. Disputes may be escalated to the Nigerian Insurance Ombudsman at <span style={{ color: '#1D4ED8' }}>complaints@naicom.gov.ng</span> free of charge.
                 </p>
               </div>
             </div>

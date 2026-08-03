@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
+import { branding } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (p: Page) => void }
@@ -33,7 +34,7 @@ const steps = [
     color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE',
     icon: Icon.upload, timeframe: 'Within 24 hrs', actor: 'Policyholder',
     short: 'Log in and file digitally',
-    desc: "Log into your InsureNG dashboard or mobile app and click 'File a Claim.' Select your policy, upload all photos and supporting documents, and submit in under 5 minutes.",
+    desc: `Log into your ${branding.companyName} dashboard or mobile app and click 'File a Claim.' Select your policy, upload all photos and supporting documents, and submit in under 5 minutes.`,
     actions: [
       "Log in to dashboard or app → 'File a Claim'",
       'Select the affected policy',
@@ -44,7 +45,7 @@ const steps = [
   {
     num: '03', title: 'Claim Acknowledged',
     color: '#0EA5E9', bg: '#F0F9FF', border: '#BAE6FD',
-    icon: Icon.check, timeframe: '< 1 hour', actor: 'InsureNG',
+    icon: Icon.check, timeframe: '< 1 hour', actor: branding.companyName,
     short: 'Reference issued instantly',
     desc: 'Our system auto-generates a claim reference number (e.g. CLM-NG-2024-00431) and assigns a dedicated claims handler within 60 minutes. You receive SMS and email confirmation.',
     actions: [
@@ -57,7 +58,7 @@ const steps = [
   {
     num: '04', title: 'Assessment',
     color: '#D97706', bg: '#FFFBEB', border: '#FDE68A',
-    icon: Icon.search, timeframe: '4 – 12 hrs', actor: 'InsureNG',
+    icon: Icon.search, timeframe: '4 – 12 hrs', actor: branding.companyName,
     short: 'Desktop or physical review',
     desc: 'A licensed assessor reviews your evidence. For vehicle claims above ₦500,000, a physical inspection is scheduled at the nearest approved panel beater. You are notified of the inspection slot by SMS.',
     actions: [
@@ -70,7 +71,7 @@ const steps = [
   {
     num: '05', title: 'Decision',
     color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0',
-    icon: Icon.award, timeframe: '12 – 24 hrs', actor: 'InsureNG',
+    icon: Icon.award, timeframe: '12 – 24 hrs', actor: branding.companyName,
     short: 'Transparent written outcome',
     desc: 'The claims committee reviews the assessor\'s report and issues a formal decision — approved, approved with adjustment, or rejected — with a written explanation for every outcome.',
     actions: [
@@ -83,7 +84,7 @@ const steps = [
   {
     num: '06', title: 'Settlement Paid',
     color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0',
-    icon: Icon.dollar, timeframe: '24 – 48 hrs', actor: 'InsureNG',
+    icon: Icon.dollar, timeframe: '24 – 48 hrs', actor: branding.companyName,
     short: 'Direct bank transfer',
     desc: "Settlement is transferred directly to your registered Nigerian bank account via NEFT/NIP within 48 hours of approval. For vehicle repairs, payment goes directly to the approved panel beater.",
     actions: [
@@ -349,7 +350,7 @@ export default function ClaimsPage({ onNavigate }: Props) {
               { emoji: '⏰', title: 'Report within 24 hours', body: 'Delayed reporting can compromise your claim. Call our 24/7 hotline or use the app immediately after the incident. Early notification protects your rights.' },
               { emoji: '📋', title: 'Keep all receipts and quotes', body: 'For property and health claims, retain every receipt, medical invoice, and repair estimate. Clear phone photos of receipts are accepted if originals are unavailable.' },
               { emoji: '⚖️', title: "Don't admit liability", body: "Never admit fault at the scene. This is standard insurance protocol worldwide. Your insurer handles liability determination — premature admissions can compromise your claim." },
-              { emoji: '📞', title: 'You have appeal rights', body: 'Rejected claims can be appealed within 30 days. You may also escalate to the NAICOM Ombudsman at zero cost. InsureNG supports all policyholders through the appeals process.' },
+              { emoji: '📞', title: 'You have appeal rights', body: `Rejected claims can be appealed within 30 days. You may also escalate to the NAICOM Ombudsman at zero cost. ${branding.companyName} supports all policyholders through the appeals process.` },
             ].map(t => (
               <div key={t.title} style={{ background: '#F8FAFC', borderRadius: 16, padding: '24px', border: '1px solid var(--border)' }}>
                 <span style={{ fontSize: 28, display: 'block', marginBottom: 12 }}>{t.emoji}</span>
@@ -370,12 +371,12 @@ export default function ClaimsPage({ onNavigate }: Props) {
               We're held accountable by NAICOM
             </h2>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'rgba(255,255,255,0.55)', lineHeight: 1.75, marginBottom: 24 }}>
-              InsureNG is regulated by the National Insurance Commission. If you're dissatisfied with any claims decision, you have the legal right to escalate — always free of charge.
+              {branding.companyName} is regulated by the National Insurance Commission. If you're dissatisfied with any claims decision, you have the legal right to escalate — always free of charge.
             </p>
             {[
               { step: 'Step 1', label: 'Internal Appeal', val: 'Submit your appeal within 30 days of the decision. Our Head of Claims responds in writing within 5 business days.' },
               { step: 'Step 2', label: 'NAICOM Ombudsman', val: 'File a free complaint at complaints@naicom.gov.ng. NAICOM mediates between you and the insurer.' },
-              { step: 'Step 3', label: 'Federal High Court', val: 'Final legal recourse under Nigerian insurance law. InsureNG fully cooperates with all court proceedings.' },
+              { step: 'Step 3', label: 'Federal High Court', val: `Final legal recourse under Nigerian insurance law. ${branding.companyName} fully cooperates with all court proceedings.` },
             ].map((r, i) => (
               <div key={r.label} style={{ display: 'flex', gap: 14, marginBottom: i < 2 ? 18 : 0 }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(29,78,216,0.3)', border: '1px solid rgba(29,78,216,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -391,9 +392,9 @@ export default function ClaimsPage({ onNavigate }: Props) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
-              { icon: '📞', title: 'Claims Hotline', sub: '0800-INSURE-NG · 24/7 toll-free', b: 'rgba(29,78,216,0.2)', bc: 'rgba(29,78,216,0.35)' },
-              { icon: '💬', title: 'WhatsApp Claims', sub: '+234 901 000 0000 · replies < 10 min', b: 'rgba(22,163,74,0.15)', bc: 'rgba(22,163,74,0.3)' },
-              { icon: '📧', title: 'Email Claims Team', sub: 'claims@insureng.com.ng', b: 'rgba(124,58,237,0.15)', bc: 'rgba(124,58,237,0.3)' },
+              { icon: '📞', title: 'Claims Hotline', sub: `${branding.supportPhone} · 24/7 toll-free`, b: 'rgba(29,78,216,0.2)', bc: 'rgba(29,78,216,0.35)' },
+              { icon: '💬', title: 'WhatsApp Claims', sub: `${branding.whatsapp} · replies < 10 min`, b: 'rgba(22,163,74,0.15)', bc: 'rgba(22,163,74,0.3)' },
+              { icon: '📧', title: 'Email Claims Team', sub: branding.claimsEmail, b: 'rgba(124,58,237,0.15)', bc: 'rgba(124,58,237,0.3)' },
               { icon: '🏛️', title: 'NAICOM Ombudsman', sub: 'complaints@naicom.gov.ng · Free', b: 'rgba(217,119,6,0.15)', bc: 'rgba(217,119,6,0.3)' },
             ].map(c => (
               <div key={c.title} style={{ padding: '18px 20px', borderRadius: 16, background: c.b, border: `1px solid ${c.bc}`, display: 'flex', alignItems: 'center', gap: 14 }}>

@@ -3,6 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
+import { branding } from '../config/branding'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -548,8 +549,8 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
               <svg viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M10 2l7 4v5c0 4-3 7-7 8C6 18 3 15 3 11V6l7-4z" /></svg>
             </div>
             <div>
-              <p style={{ fontFamily: T.display, fontSize: 13, fontWeight: 800, color: 'white', letterSpacing: '-0.01em', lineHeight: 1 }}>InsureNG</p>
-              <p style={{ fontFamily: T.mono, fontSize: 9, color: T.sidebarText, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>Admin Console</p>
+              <p style={{ fontFamily: T.display, fontSize: 13, fontWeight: 800, color: 'white', letterSpacing: '-0.01em', lineHeight: 1 }}>{branding.companyName}</p>
+              <p style={{ fontFamily: T.mono, fontSize: 9, color: T.sidebarText, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>{branding.adminLabel}</p>
             </div>
           </div>
         </div>

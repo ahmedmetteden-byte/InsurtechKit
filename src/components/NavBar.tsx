@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
+import { branding } from '../config/branding'
 import { Button, Row } from './ui'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
@@ -31,7 +32,7 @@ export default function NavBar({ current, onNavigate, onAdminClick, onMobileClic
           <Row gap={16} justify="space-between" wrap>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em' }}>
               NAICOM Licensed · Claims hotline:&nbsp;
-              <strong style={{ color: 'white' }}>0800-INSURE-NG</strong>
+              <strong style={{ color: 'white' }}>{branding.supportPhone}</strong>
             </p>
             <Row gap={12} wrap={false} className="hidden md:flex">
               {[
@@ -55,12 +56,12 @@ export default function NavBar({ current, onNavigate, onAdminClick, onMobileClic
         {/* Logo — hug-content layout, never fixed width */}
         <button onClick={() => onNavigate('home')}
           style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #1D4ED8, #1E3A8A)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${branding.primaryColor}, #1E3A8A)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
             <div style={{ width: 20, height: 20 }}>{Icon.shield}</div>
           </div>
           <div style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em', color: '#0F172A', lineHeight: 1.1 }}>InsureNG</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: '#94A3B8', textTransform: 'uppercase' }}>White-Label Portal</p>
+            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em', color: '#0F172A', lineHeight: 1.1 }}>{branding.companyName}</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: '#94A3B8', textTransform: 'uppercase' }}>{branding.portalLabel}</p>
           </div>
         </button>
 

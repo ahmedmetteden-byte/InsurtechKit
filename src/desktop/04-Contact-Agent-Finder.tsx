@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
+import { branding } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (_p: Page) => void }
@@ -55,7 +56,7 @@ function NigeriaMap({ selected, onSelect }: { selected: string | null; onSelect:
       </svg>
       <div style={{ padding: '10px 16px', borderTop: '1px solid #BFDBFE', background: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', border: '1.5px solid white', boxShadow: '0 0 0 1.5px #3B82F6' }} />
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748B' }}>InsureNG Office · Click pin to view details</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748B' }}>{branding.companyName} Office · Click pin to view details</span>
       </div>
     </div>
   )
@@ -63,10 +64,10 @@ function NigeriaMap({ selected, onSelect }: { selected: string | null; onSelect:
 
 // ── Offices ───────────────────────────────────────────────────────────────────
 const offices = [
-  { id: 'lagos', city: 'Lagos', label: 'Head Office', address: '14 Marina Street, Lagos Island, Lagos 101001', phone: '+234 1 900 0000', email: 'lagos@insureng.com.ng', hours: 'Mon–Fri 8am–6pm · Sat 9am–2pm', agents: 42, region: 'South West', img: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=600&h=280&fit=crop&auto=format', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
-  { id: 'abuja', city: 'Abuja', label: 'FCT Office', address: 'Plot 1234 Adeola Hopewell, Central Business District, Abuja', phone: '+234 9 900 0000', email: 'abuja@insureng.com.ng', hours: 'Mon–Fri 8am–5pm · Sat 10am–1pm', agents: 18, region: 'North Central', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&h=280&fit=crop&auto=format', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
-  { id: 'ph', city: 'Port Harcourt', label: 'South South Office', address: '7 Rumuola Road, Port Harcourt, Rivers State 500001', phone: '+234 84 900 000', email: 'portharcourt@insureng.com.ng', hours: 'Mon–Fri 8am–5pm', agents: 15, region: 'South South', img: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&h=280&fit=crop&auto=format', color: '#0EA5E9', bg: '#F0F9FF', border: '#BAE6FD' },
-  { id: 'kano', city: 'Kano', label: 'North Office', address: '22 Ibrahim Taiwo Road, Kano Municipal, Kano State', phone: '+234 64 900 000', email: 'kano@insureng.com.ng', hours: 'Mon–Fri 8am–5pm · Sat 9am–12pm', agents: 12, region: 'North West', img: 'https://images.unsplash.com/photo-1575538439014-8b1df7a4a564?w=600&h=280&fit=crop&auto=format', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+  { id: 'lagos', city: 'Lagos', label: 'Head Office', address: '14 Marina Street, Lagos Island, Lagos 101001', phone: '+234 1 900 0000', email: `lagos@${branding.emailDomain}`, hours: 'Mon–Fri 8am–6pm · Sat 9am–2pm', agents: 42, region: 'South West', img: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=600&h=280&fit=crop&auto=format', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
+  { id: 'abuja', city: 'Abuja', label: 'FCT Office', address: 'Plot 1234 Adeola Hopewell, Central Business District, Abuja', phone: '+234 9 900 0000', email: `abuja@${branding.emailDomain}`, hours: 'Mon–Fri 8am–5pm · Sat 10am–1pm', agents: 18, region: 'North Central', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&h=280&fit=crop&auto=format', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+  { id: 'ph', city: 'Port Harcourt', label: 'South South Office', address: '7 Rumuola Road, Port Harcourt, Rivers State 500001', phone: '+234 84 900 000', email: `portharcourt@${branding.emailDomain}`, hours: 'Mon–Fri 8am–5pm', agents: 15, region: 'South South', img: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&h=280&fit=crop&auto=format', color: '#0EA5E9', bg: '#F0F9FF', border: '#BAE6FD' },
+  { id: 'kano', city: 'Kano', label: 'North Office', address: '22 Ibrahim Taiwo Road, Kano Municipal, Kano State', phone: '+234 64 900 000', email: `kano@${branding.emailDomain}`, hours: 'Mon–Fri 8am–5pm · Sat 9am–12pm', agents: 12, region: 'North West', img: 'https://images.unsplash.com/photo-1575538439014-8b1df7a4a564?w=600&h=280&fit=crop&auto=format', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
 ]
 
 // ── Agent Finder ──────────────────────────────────────────────────────────────
@@ -134,7 +135,7 @@ function AgentFinder() {
         {selectedState && agents.length === 0 && (
           <div style={{ marginTop: 20, padding: '20px', borderRadius: 12, background: '#FFF7ED', border: '1px solid #FED7AA', textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: '#92400E', marginBottom: 4 }}>Agents coming soon to {selectedState}</p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#B45309' }}>Call our national hotline: 0800-INSURE-NG</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#B45309' }}>Call our national hotline: {branding.supportPhone}</p>
           </div>
         )}
       </div>
@@ -264,9 +265,9 @@ export default function ContactPage({ onNavigate: _onNavigate }: Props) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, maxWidth: 860, margin: '0 auto' }}>
             {[
-              { icon: '📞', label: 'Toll-Free Hotline', val: '0800-INSURE-NG', sub: '24/7 · Free from any network', bg: 'rgba(29,78,216,0.15)', bc: 'rgba(29,78,216,0.3)' },
-              { icon: '💬', label: 'WhatsApp', val: '+234 901 000 0000', sub: 'Avg. reply < 8 minutes', bg: 'rgba(22,163,74,0.12)', bc: 'rgba(22,163,74,0.28)' },
-              { icon: '📧', label: 'Email', val: 'hello@insureng.com.ng', sub: 'Response within 2 hrs', bg: 'rgba(124,58,237,0.12)', bc: 'rgba(124,58,237,0.28)' },
+              { icon: '📞', label: 'Toll-Free Hotline', val: branding.supportPhone, sub: '24/7 · Free from any network', bg: 'rgba(29,78,216,0.15)', bc: 'rgba(29,78,216,0.3)' },
+              { icon: '💬', label: 'WhatsApp', val: branding.whatsapp, sub: 'Avg. reply < 8 minutes', bg: 'rgba(22,163,74,0.12)', bc: 'rgba(22,163,74,0.28)' },
+              { icon: '📧', label: 'Email', val: branding.supportEmail, sub: 'Response within 2 hrs', bg: 'rgba(124,58,237,0.12)', bc: 'rgba(124,58,237,0.28)' },
               { icon: '🕐', label: 'Support Hours', val: 'Always On', sub: 'Mon–Sun, 24 hours', bg: 'rgba(217,119,6,0.12)', bc: 'rgba(217,119,6,0.28)' },
             ].map(c => (
               <div key={c.label} style={{ padding: '18px 16px', borderRadius: 16, background: c.bg, border: `1px solid ${c.bc}`, textAlign: 'center' }}>

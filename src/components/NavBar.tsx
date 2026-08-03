@@ -8,6 +8,7 @@ interface NavBarProps {
   current: Page
   onNavigate: (p: Page) => void
   onAdminClick?: () => void
+  onMobileClick?: () => void
 }
 
 const links: { label: string; page: Page }[] = [
@@ -17,7 +18,7 @@ const links: { label: string; page: Page }[] = [
   { label: 'Contact', page: 'contact' },
 ]
 
-export default function NavBar({ current, onNavigate, onAdminClick }: NavBarProps) {
+export default function NavBar({ current, onNavigate, onAdminClick, onMobileClick }: NavBarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
@@ -95,6 +96,12 @@ export default function NavBar({ current, onNavigate, onAdminClick }: NavBarProp
 
         {/* Desktop CTAs — Button components handle Auto Layout natively */}
         <Row gap={10} wrap={false} className="hidden md:flex" style={{ flexShrink: 0 }}>
+          {onMobileClick && (
+            <button onClick={onMobileClick}
+              style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 13px', borderRadius: 8, border: '1px solid #E2E8F0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#475569', background: '#F8FAFC', cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              Mobile ↗
+            </button>
+          )}
           {onAdminClick && (
             <button onClick={onAdminClick}
               style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 13px', borderRadius: 8, border: '1px solid #E2E8F0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#475569', background: '#F8FAFC', cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap', flexShrink: 0 }}>

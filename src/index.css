@@ -1,0 +1,236 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Entry point — load order matters for PostCSS:
+   1. Google Fonts  (@import must be FIRST — before every other rule)
+   2. Design tokens (Layer 1 palette + Layer 2/3 semantic aliases)
+   3. Tailwind       (generates utility classes from @theme block)
+   4. Auto Layout utilities
+   5. Base resets
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* 1 · Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+/* 2 · Design tokens  (swap this import to change brand theme) */
+@import './styles/tokens.css';
+/* Preset alternatives — uncomment ONE to rebrand:
+   @import './styles/presets/theme-purple.css';
+   @import './styles/presets/theme-green.css';
+   @import './styles/presets/theme-dark.css';  */
+
+/* 3 · Tailwind */
+@import 'tailwindcss';
+
+
+/* ── Tailwind theme bridge ──────────────────────────────────────────────────
+   Maps semantic CSS variables (Layer 2) to Tailwind utility classes.
+   Never reference raw brand palette tokens here — always the semantic alias.
+   This ensures Tailwind classes also rebrand automatically.
+   ─────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  /* Core surfaces */
+  --color-background:         var(--background);
+  --color-foreground:         var(--foreground);
+  --color-card:               var(--card);
+  --color-card-foreground:    var(--card-foreground);
+  --color-muted:              var(--muted);
+  --color-muted-foreground:   var(--muted-foreground);
+
+  /* Brand interactive */
+  --color-primary:            var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:          var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent:             var(--accent);
+  --color-accent-foreground:  var(--accent-foreground);
+
+  /* Structure */
+  --color-border:             var(--border);
+  --color-ring:               var(--ring);
+
+  /* State colors (fixed meaning — not brand) */
+  --color-success:            var(--state-success);
+  --color-warning:            var(--state-warning);
+  --color-danger:             var(--state-danger);
+  --color-info:               var(--state-info);
+
+  /* Typography */
+  --font-family-display: var(--font-display);
+  --font-family-body:    var(--font-body);
+  --font-family-mono:    var(--font-mono);
+
+  /* Radius scale */
+  --radius-sm:   var(--radius-sm);
+  --radius-md:   var(--radius-md);
+  --radius-lg:   var(--radius-lg);
+  --radius-xl:   var(--radius-xl);
+  --radius-2xl:  var(--radius-2xl);
+}
+
+
+/* ── Auto Layout utilities ──────────────────────────────────────────────────
+   Mirrors Figma Auto Layout. Sizing is always content-driven via padding +
+   gap. Never use fixed width/height on these elements directly.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Button base */
+.al-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s, transform 0.1s;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.al-btn:active  { transform: scale(0.97); }
+.al-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.al-btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+/* Size tokens — padding only, no width */
+.al-btn-sm  { padding: 7px  14px; font-size: 12px; border-radius: var(--radius-md); }
+.al-btn-md  { padding: 10px 20px; font-size: 14px; border-radius: var(--radius-lg); }
+.al-btn-lg  { padding: 14px 28px; font-size: 15px; border-radius: var(--radius-lg); }
+.al-btn-xl  { padding: 16px 36px; font-size: 16px; border-radius: var(--radius-xl); }
+
+/* Colour variants — reference semantic tokens only */
+.al-btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--primary-foreground);
+  box-shadow: 0 2px 8px var(--btn-primary-shadow);
+}
+.al-btn-primary:hover  { background: var(--btn-primary-hover); }
+
+.al-btn-secondary { background: var(--btn-secondary-bg); color: var(--secondary-foreground); }
+.al-btn-secondary:hover { background: var(--btn-secondary-hover); }
+
+.al-btn-accent    { background: var(--btn-accent-bg); color: var(--accent-foreground); }
+.al-btn-accent:hover { background: var(--btn-accent-hover); }
+
+.al-btn-ghost     { background: transparent; color: var(--muted-foreground); }
+.al-btn-ghost:hover { background: var(--muted); color: var(--foreground); }
+
+.al-btn-outline   { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+.al-btn-outline:hover { background: var(--primary-subtle); }
+
+.al-btn-subtle    { background: var(--primary-subtle); color: var(--primary); border: 1px solid var(--primary-subtle-border); }
+.al-btn-subtle:hover { background: var(--brand-primary-100); }
+
+.al-btn-danger    { background: var(--state-danger-bg); color: var(--state-danger); border: 1px solid var(--state-danger-border); }
+.al-btn-danger:hover { background: #FEE2E2; }
+
+.al-btn-dark      { background: var(--hero-bg); color: var(--neutral-text-inverse); }
+.al-btn-dark:hover { background: var(--neutral-dark-600); }
+
+.al-btn-full { display: flex; width: 100%; }
+
+/* Badge */
+.al-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+.al-badge-dot::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Card */
+.al-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  padding: 24px;
+}
+
+/* Row */
+.al-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Stack */
+.al-stack         { display: flex; flex-direction: column; min-width: 0; }
+.al-stack-xs      { gap: 4px; }
+.al-stack-sm      { gap: 8px; }
+.al-stack-md      { gap: 16px; }
+.al-stack-lg      { gap: 24px; }
+.al-stack-xl      { gap: 36px; }
+
+/* Eyebrow label */
+.al-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--eyebrow-bg);
+  border: 1px solid var(--eyebrow-border);
+  color: var(--eyebrow-color);
+}
+.al-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--eyebrow-dot);
+  flex-shrink: 0;
+}
+.al-eyebrow-light {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
+}
+.al-eyebrow-light::before { background: rgba(255,255,255,0.6); }
+
+
+/* ── Base resets ────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Scrollbars — hidden until scrolling */
+::-webkit-scrollbar          { width: 6px; height: 6px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: var(--neutral-border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--neutral-text-placeholder); }

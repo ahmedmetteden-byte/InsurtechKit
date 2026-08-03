@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Preset: Dark Brand (Charcoal + Amber)
+   ───────────────────────────────────────────────────────────────────────────
+   Dark-first surface tokens with amber primary. Suited for a premium or
+   fintech-adjacent identity. Flip --neutral-surface-page to near-black,
+   promote amber to primary CTA, keep green as secondary/approved state.
+   ═══════════════════════════════════════════════════════════════════════════ */
+   @import '../tokens.css';
+
+   :root {
+     /* Brand / Primary — Amber / Gold */
+     --brand-primary-50:  #FFFBEB;
+     --brand-primary-100: #FEF3C7;
+     --brand-primary-200: #FDE68A;
+     --brand-primary-300: #FCD34D;
+     --brand-primary-400: #FBBF24;
+     --brand-primary-500: #F59E0B;
+     --brand-primary-600: #D97706;
+     --brand-primary-700: #B45309;   /* ◄ main primary */
+     --brand-primary-800: #92400E;
+     --brand-primary-900: #78350F;
+   
+     /* Brand / Accent — shift to cyan for dark-mode pop */
+     --brand-accent:        #06B6D4;
+     --brand-accent-light:  #CFFAFE;
+     --brand-accent-border: #A5F3FC;
+     --brand-accent-dark:   #0891B2;
+   
+     /* Neutral / Surface — dark-first */
+     --neutral-surface-page:   #0C0E14;
+     --neutral-surface-card:   #141720;
+     --neutral-surface-raised: #1A1E2A;
+     --neutral-surface-sunken: #0A0C12;
+     --neutral-surface-canvas: #111318;
+   
+     /* Neutral / Text — inverted for dark ground */
+     --neutral-text-primary:     #F1F5F9;
+     --neutral-text-secondary:   #CBD5E1;
+     --neutral-text-tertiary:    #94A3B8;
+     --neutral-text-muted:       #64748B;
+     --neutral-text-placeholder: #475569;
+     --neutral-text-inverse:     #0F172A;
+   
+     /* Neutral / Border — lower contrast on dark ground */
+     --neutral-border:        rgba(255,255,255,0.08);
+     --neutral-border-strong: rgba(255,255,255,0.14);
+     --neutral-border-subtle: rgba(255,255,255,0.04);
+   
+     /* Dark canvases stay dark — no change needed */
+   }
+   

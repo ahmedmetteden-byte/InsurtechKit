@@ -1,0 +1,310 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   InsureNG — Design Token System
+   ───────────────────────────────────────────────────────────────────────────
+   THREE-LAYER ARCHITECTURE
+   ─────────────────────────
+   Layer 1 · Brand Palette     Raw color values. Buyer edits ONLY this layer.
+   Layer 2 · Semantic Aliases  Maps palette to roles. Never edit hex here.
+   Layer 3 · Component Tokens  Fine-grain overrides for specific components.
+
+   TO REBRAND: Update the values in Layer 1 only. Every button, header,
+   badge, and background in the entire platform updates automatically.
+
+   PRESET THEMES (drop-in replacements for Layer 1):
+     Purple brand  →  src/styles/presets/theme-purple.css
+     Green brand   →  src/styles/presets/theme-green.css
+     Dark brand    →  src/styles/presets/theme-dark.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   LAYER 1 · BRAND PALETTE
+   ───────────────────────────────────────────────────────────────────────────
+   Change these values to rebrand the entire platform.
+   Each group maps to a Figma variable group of the same name.
+   ─────────────────────────────────────────────────────────────────────────── */
+   :root {
+
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Brand / Primary                                      │
+       │  Used for: CTAs, nav active state, focus rings,       │
+       │  primary buttons, links, chart fill, claims tracker   │
+       └──────────────────────────────────────────────────────┘ */
+    --brand-primary-50:  #EFF6FF;
+    --brand-primary-100: #DBEAFE;
+    --brand-primary-200: #BFDBFE;
+    --brand-primary-300: #93C5FD;
+    --brand-primary-400: #60A5FA;
+    --brand-primary-500: #3B82F6;
+    --brand-primary-600: #2563EB;
+    --brand-primary-700: #1D4ED8;   /* ◄ main primary — change this first */
+    --brand-primary-800: #1E40AF;
+    --brand-primary-900: #1E3A8A;   /* ◄ dark primary — nav strip, sidebar */
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Brand / Secondary                                    │
+       │  Used for: Approved badges, success states,           │
+       │  settlement paid indicators, policy active pill       │
+       └──────────────────────────────────────────────────────┘ */
+    --brand-secondary-50:  #F0FDF4;
+    --brand-secondary-100: #DCFCE7;
+    --brand-secondary-200: #BBF7D0;
+    --brand-secondary-300: #86EFAC;
+    --brand-secondary-400: #4ADE80;
+    --brand-secondary-500: #22C55E;
+    --brand-secondary-600: #16A34A;  /* ◄ main secondary */
+    --brand-secondary-700: #15803D;
+    --brand-secondary-800: #166534;
+    --brand-secondary-900: #14532D;
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Brand / Accent                                       │
+       │  Used for: Highlights, pending states, claim tracker  │
+       │  "in progress" indicator, admin urgency amber tags    │
+       └──────────────────────────────────────────────────────┘ */
+    --brand-accent:        #F59E0B;  /* ◄ amber — change for a different pop */
+    --brand-accent-light:  #FEF3C7;
+    --brand-accent-border: #FDE68A;
+    --brand-accent-dark:   #D97706;
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Neutral / Surface                                    │
+       │  Used for: page background, card backgrounds,         │
+       │  table rows, input fields, admin parchment canvas     │
+       └──────────────────────────────────────────────────────┘ */
+    --neutral-surface-page:    #FAFBFF;  /* ◄ main page background */
+    --neutral-surface-card:    #FFFFFF;  /* ◄ cards, modals, panels */
+    --neutral-surface-raised:  #F8FAFC;  /* table headers, form sections */
+    --neutral-surface-sunken:  #F1F5F9;  /* input backgrounds, code blocks */
+    --neutral-surface-canvas:  #F4F3EF;  /* admin parchment / off-white */
+    --neutral-surface-overlay: rgba(15, 23, 42, 0.5); /* modal scrim */
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Neutral / Text                                       │
+       │  Used for: headings, body copy, muted labels, mono    │
+       │  data strings in the admin table and claim tracker    │
+       └──────────────────────────────────────────────────────┘ */
+    --neutral-text-primary:   #0F172A;  /* ◄ headings, bold labels */
+    --neutral-text-secondary: #334155;  /* body paragraphs */
+    --neutral-text-tertiary:  #475569;  /* supporting copy */
+    --neutral-text-muted:     #64748B;  /* captions, timestamps */
+    --neutral-text-placeholder: #94A3B8; /* input placeholder */
+    --neutral-text-disabled:  #CBD5E1;  /* disabled state copy */
+    --neutral-text-inverse:   #FFFFFF;  /* text on dark surfaces */
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Neutral / Border                                     │
+       │  Used for: card edges, input outlines, table rules,   │
+       │  dividers, hairlines throughout                       │
+       └──────────────────────────────────────────────────────┘ */
+    --neutral-border:        #E2E8F0;  /* ◄ default hairline */
+    --neutral-border-strong: #CBD5E1;  /* emphasized dividers */
+    --neutral-border-subtle: #F1F5F9;  /* very light inset rules */
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Neutral / Dark Canvas                               │
+       │  Used for: hero sections, nav strip, admin sidebar,   │
+       │  claims page hero, dark CTA bands                    │
+       └──────────────────────────────────────────────────────┘ */
+    --neutral-dark-900: #060F2A;  /* ◄ deepest dark — hero backgrounds */
+    --neutral-dark-800: #0A1628;  /* admin sidebar */
+    --neutral-dark-700: #0F172A;  /* footer background */
+    --neutral-dark-600: #1E293B;  /* dark card backgrounds */
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  State / Semantic                                     │
+       │  Fixed meaning — do not swap these for brand colors   │
+       │  Danger = always red. Warning = always amber.        │
+       └──────────────────────────────────────────────────────┘ */
+    --state-success:        #16A34A;
+    --state-success-bg:     #F0FDF4;
+    --state-success-border: #BBF7D0;
+  
+    --state-warning:        #D97706;
+    --state-warning-bg:     #FFFBEB;
+    --state-warning-border: #FDE68A;
+  
+    --state-danger:         #DC2626;
+    --state-danger-bg:      #FEF2F2;
+    --state-danger-border:  #FECACA;
+  
+    --state-info:           #0EA5E9;
+    --state-info-bg:        #F0F9FF;
+    --state-info-border:    #BAE6FD;
+  
+    --state-purple:         #7C3AED;
+    --state-purple-bg:      #F5F3FF;
+    --state-purple-border:  #DDD6FE;
+  
+    --state-pink:           #EC4899;
+    --state-pink-bg:        #FDF2F8;
+    --state-pink-border:    #FBCFE8;
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Typography                                           │
+       └──────────────────────────────────────────────────────┘ */
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'DM Mono', monospace;
+  
+    --font-size-xs:   11px;
+    --font-size-sm:   13px;
+    --font-size-base: 15px;
+    --font-size-md:   17px;
+    --font-size-lg:   20px;
+    --font-size-xl:   24px;
+    --font-size-2xl:  30px;
+    --font-size-3xl:  38px;
+    --font-size-4xl:  48px;
+    --font-size-hero: clamp(30px, 4vw, 56px);
+  
+  
+    /* ┌──────────────────────────────────────────────────────┐
+       │  Spacing & Shape                                      │
+       └──────────────────────────────────────────────────────┘ */
+    --radius-sm:   6px;
+    --radius-md:   8px;
+    --radius-lg:   12px;
+    --radius-xl:   16px;
+    --radius-2xl:  20px;
+    --radius-3xl:  24px;
+    --radius-full: 9999px;
+  
+    --shadow-sm:   0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:   0 4px 16px rgba(0,0,0,0.07);
+    --shadow-lg:   0 8px 32px rgba(0,0,0,0.09);
+    --shadow-xl:   0 16px 48px rgba(0,0,0,0.12);
+  
+  
+  /* ───────────────────────────────────────────────────────────────────────────
+     LAYER 2 · SEMANTIC ALIASES
+     ───────────────────────────────────────────────────────────────────────────
+     These tokens are consumed by all components. They reference ONLY Layer 1
+     variables — never hardcoded hex values. Do not edit this section when
+     rebranding; edit Layer 1 above instead.
+     ─────────────────────────────────────────────────────────────────────────── */
+  
+    /* Interactive / Primary role */
+    --primary:             var(--brand-primary-700);
+    --primary-hover:       var(--brand-primary-800);
+    --primary-active:      var(--brand-primary-900);
+    --primary-subtle:      var(--brand-primary-50);
+    --primary-subtle-border: var(--brand-primary-200);
+    --primary-foreground:  var(--neutral-text-inverse);
+  
+    /* Interactive / Secondary role */
+    --secondary:           var(--brand-secondary-600);
+    --secondary-hover:     var(--brand-secondary-700);
+    --secondary-subtle:    var(--brand-secondary-50);
+    --secondary-subtle-border: var(--brand-secondary-200);
+    --secondary-foreground: var(--neutral-text-inverse);
+  
+    /* Accent */
+    --accent:              var(--brand-accent);
+    --accent-light:        var(--brand-accent-light);
+    --accent-border:       var(--brand-accent-border);
+    --accent-foreground:   #1C1917;
+  
+    /* Surface roles */
+    --background:          var(--neutral-surface-page);
+    --foreground:          var(--neutral-text-primary);
+    --card:                var(--neutral-surface-card);
+    --card-foreground:     var(--neutral-text-primary);
+    --muted:               var(--neutral-surface-sunken);
+    --muted-foreground:    var(--neutral-text-muted);
+  
+    /* Border / Ring */
+    --border:              var(--neutral-border);
+    --border-strong:       var(--neutral-border-strong);
+    --ring:                var(--brand-primary-700);
+  
+    /* Dark surfaces */
+    --surface-hero:        var(--neutral-dark-900);
+    --surface-sidebar:     var(--neutral-dark-800);
+    --surface-footer:      var(--neutral-dark-700);
+  
+    /* Nav-strip (top info bar) references brand primary-900 */
+    --nav-strip-bg:        var(--brand-primary-900);
+  
+    /* Focus ring */
+    --focus-ring: 0 0 0 3px color-mix(in srgb, var(--brand-primary-700) 30%, transparent);
+  
+  
+  /* ───────────────────────────────────────────────────────────────────────────
+     LAYER 3 · COMPONENT TOKENS
+     ───────────────────────────────────────────────────────────────────────────
+     Fine-grain overrides per component. Each component token references a
+     semantic alias — never a raw brand palette value directly.
+     ─────────────────────────────────────────────────────────────────────────── */
+  
+    /* Button */
+    --btn-primary-bg:      var(--primary);
+    --btn-primary-hover:   var(--primary-hover);
+    --btn-primary-shadow:  color-mix(in srgb, var(--primary) 35%, transparent);
+    --btn-secondary-bg:    var(--secondary);
+    --btn-secondary-hover: var(--secondary-hover);
+    --btn-accent-bg:       var(--accent);
+    --btn-accent-hover:    var(--brand-accent-dark);
+  
+    /* Nav */
+    --nav-link-active-bg:    var(--primary-subtle);
+    --nav-link-active-color: var(--primary);
+    --nav-link-color:        var(--neutral-text-tertiary);
+  
+    /* Badge */
+    --badge-primary-bg:    var(--primary-subtle);
+    --badge-primary-text:  var(--primary);
+    --badge-primary-border: var(--primary-subtle-border);
+  
+    /* Card */
+    --card-border:         var(--border);
+    --card-radius:         var(--radius-xl);
+    --card-shadow:         var(--shadow-sm);
+  
+    /* Eyebrow */
+    --eyebrow-bg:          var(--primary-subtle);
+    --eyebrow-border:      var(--primary-subtle-border);
+    --eyebrow-color:       var(--primary);
+    --eyebrow-dot:         var(--primary);
+  
+    /* Input */
+    --input-border:        var(--border);
+    --input-focus-border:  var(--primary);
+    --input-focus-ring:    var(--focus-ring);
+    --input-bg:            var(--card);
+    --input-error-border:  var(--state-danger);
+    --input-error-bg:      var(--state-danger-bg);
+  
+    /* Table */
+    --table-header-bg:     var(--neutral-surface-raised);
+    --table-row-hover:     var(--primary-subtle);
+    --table-row-selected:  var(--primary-subtle);
+    --table-border:        var(--border);
+  
+    /* Admin sidebar */
+    --sidebar-bg:          var(--surface-sidebar);
+    --sidebar-active-bg:   color-mix(in srgb, var(--accent) 12%, transparent);
+    --sidebar-active-border: color-mix(in srgb, var(--accent) 20%, transparent);
+    --sidebar-active-color: var(--accent);
+  
+    /* Hero sections */
+    --hero-bg:             var(--surface-hero);
+    --hero-glow:           color-mix(in srgb, var(--primary) 25%, transparent);
+  
+    /* Stats / Trust band */
+    --trust-band-bg:       var(--neutral-surface-raised);
+  
+    /* Claims timeline */
+    --timeline-active:     var(--accent);
+    --timeline-done:       var(--secondary);
+    --timeline-pending:    var(--neutral-border);
+  }
+  

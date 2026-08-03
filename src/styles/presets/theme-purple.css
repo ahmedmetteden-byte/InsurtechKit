@@ -1,0 +1,35 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Preset: Purple Brand
+   ───────────────────────────────────────────────────────────────────────────
+   Drop-in replacement for Layer 1 in tokens.css.
+   Keeps secondary (green) and accent (amber) as universal state colors.
+
+   TO APPLY:
+     In src/index.css, replace the @import for tokens.css with:
+       @import './styles/presets/theme-purple.css';
+
+   Or copy just the :root block below and paste it over
+   the Brand/Primary block in tokens.css Layer 1.
+   ═══════════════════════════════════════════════════════════════════════════ */
+   @import '../tokens.css';
+
+   :root {
+     /* Brand / Primary — Violet / Purple */
+     --brand-primary-50:  #F5F3FF;
+     --brand-primary-100: #EDE9FE;
+     --brand-primary-200: #DDD6FE;
+     --brand-primary-300: #C4B5FD;
+     --brand-primary-400: #A78BFA;
+     --brand-primary-500: #8B5CF6;
+     --brand-primary-600: #7C3AED;
+     --brand-primary-700: #6D28D9;   /* ◄ main primary */
+     --brand-primary-800: #5B21B6;
+     --brand-primary-900: #4C1D95;   /* ◄ dark — nav strip */
+   
+     /* Brand / Accent — keep amber for pending/warning states */
+     --brand-accent:        #F59E0B;
+     --brand-accent-light:  #FEF3C7;
+     --brand-accent-border: #FDE68A;
+     --brand-accent-dark:   #D97706;
+   }
+   

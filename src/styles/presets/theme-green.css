@@ -1,0 +1,40 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Preset: Green Brand
+   ───────────────────────────────────────────────────────────────────────────
+   Swaps primary to a deep forest green. Secondary becomes teal to avoid
+   collision with the primary — both "Approved" and CTAs should feel distinct.
+   ═══════════════════════════════════════════════════════════════════════════ */
+   @import '../tokens.css';
+
+   :root {
+     /* Brand / Primary — Forest Green */
+     --brand-primary-50:  #F0FDF4;
+     --brand-primary-100: #DCFCE7;
+     --brand-primary-200: #BBF7D0;
+     --brand-primary-300: #86EFAC;
+     --brand-primary-400: #4ADE80;
+     --brand-primary-500: #22C55E;
+     --brand-primary-600: #16A34A;
+     --brand-primary-700: #15803D;   /* ◄ main primary */
+     --brand-primary-800: #166534;
+     --brand-primary-900: #14532D;   /* ◄ dark — nav strip */
+   
+     /* Brand / Secondary — Teal (differentiates from primary green) */
+     --brand-secondary-50:  #F0FDFA;
+     --brand-secondary-100: #CCFBF1;
+     --brand-secondary-200: #99F6E4;
+     --brand-secondary-300: #5EEAD4;
+     --brand-secondary-400: #2DD4BF;
+     --brand-secondary-500: #14B8A6;
+     --brand-secondary-600: #0D9488;   /* ◄ main secondary */
+     --brand-secondary-700: #0F766E;
+     --brand-secondary-800: #115E59;
+     --brand-secondary-900: #134E4A;
+   
+     /* Brand / Accent — warm gold to contrast with green */
+     --brand-accent:        #CA8A04;
+     --brand-accent-light:  #FEF9C3;
+     --brand-accent-border: #FEF08A;
+     --brand-accent-dark:   #A16207;
+   }
+   

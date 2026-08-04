@@ -1,5 +1,6 @@
 import { defaultPolicies } from '../config/defaultPolicies'
 import type { CreatePolicyInput, Policy, UpdatePolicyInput } from '../types/Policy'
+import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
 
 /**
  * In-memory Policy service.
@@ -26,6 +27,7 @@ class PolicyServiceImpl {
       updatedAt: now,
     }
     this.policies = [...this.policies, policy]
+    emitMemoryDataChange()
     return { ...policy }
   }
 
@@ -46,18 +48,22 @@ class PolicyServiceImpl {
       updated,
       ...this.policies.slice(index + 1),
     ]
+    emitMemoryDataChange()
     return { ...updated }
   }
 
   delete(id: string): boolean {
     const before = this.policies.length
     this.policies = this.policies.filter(p => p.id !== id)
-    return this.policies.length < before
+    const changed = this.policies.length < before
+    if (changed) emitMemoryDataChange()
+    return changed
   }
 
   /** Restore seed policies (useful for demos / tests). */
   reset(): void {
     this.policies = defaultPolicies.map(p => ({ ...p }))
+    emitMemoryDataChange()
   }
 }
 

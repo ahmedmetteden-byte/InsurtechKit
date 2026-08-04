@@ -1,5 +1,6 @@
 import { defaultProducts } from '../config/defaultProducts'
 import type { CreateProductInput, Product, UpdateProductInput } from '../types/Product'
+import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
 
 /**
  * In-memory Product service.
@@ -26,6 +27,7 @@ class ProductServiceImpl {
       updatedAt: now,
     }
     this.products = [...this.products, product]
+    emitMemoryDataChange()
     return { ...product }
   }
 
@@ -46,18 +48,22 @@ class ProductServiceImpl {
       updated,
       ...this.products.slice(index + 1),
     ]
+    emitMemoryDataChange()
     return { ...updated }
   }
 
   delete(id: string): boolean {
     const before = this.products.length
     this.products = this.products.filter(p => p.id !== id)
-    return this.products.length < before
+    const changed = this.products.length < before
+    if (changed) emitMemoryDataChange()
+    return changed
   }
 
   /** Restore seed catalogue (useful for demos / tests). */
   reset(): void {
     this.products = defaultProducts.map(p => ({ ...p }))
+    emitMemoryDataChange()
   }
 }
 

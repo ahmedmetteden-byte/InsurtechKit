@@ -1,5 +1,6 @@
 import { defaultCustomers } from '../config/defaultCustomers'
 import type { CreateCustomerInput, Customer, UpdateCustomerInput } from '../types/Customer'
+import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
 
 /**
  * In-memory Customer service.
@@ -26,6 +27,7 @@ class CustomerServiceImpl {
       updatedAt: now,
     }
     this.customers = [...this.customers, customer]
+    emitMemoryDataChange()
     return { ...customer }
   }
 
@@ -46,18 +48,22 @@ class CustomerServiceImpl {
       updated,
       ...this.customers.slice(index + 1),
     ]
+    emitMemoryDataChange()
     return { ...updated }
   }
 
   delete(id: string): boolean {
     const before = this.customers.length
     this.customers = this.customers.filter(c => c.id !== id)
-    return this.customers.length < before
+    const changed = this.customers.length < before
+    if (changed) emitMemoryDataChange()
+    return changed
   }
 
   /** Restore seed customers (useful for demos / tests). */
   reset(): void {
     this.customers = defaultCustomers.map(c => ({ ...c }))
+    emitMemoryDataChange()
   }
 }
 

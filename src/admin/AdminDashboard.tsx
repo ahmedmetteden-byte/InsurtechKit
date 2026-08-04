@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -10,6 +10,16 @@ import CompanySettings from '../settings/CompanySettings'
 import { ProductManagement } from '../modules/products'
 import { CustomerManagement } from '../modules/customers'
 import { PolicyManagement } from '../modules/policies'
+import { onMemoryDataChange } from './memoryDataEvents'
+import {
+  formatNairaCompact,
+  getDashboardMetrics,
+  getModuleHealth,
+  getPoliciesByProductType,
+  getPremiumTrendFromPolicies,
+  getRecentActivity,
+  getWeeklyCreateActivity,
+} from './dashboardData'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -40,39 +50,7 @@ const T = {
   body: "'DM Sans', sans-serif",
 }
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const premiumTrend = [
-  { month: 'Jan', premium: 18.4, target: 16 },
-  { month: 'Feb', premium: 22.1, target: 18 },
-  { month: 'Mar', premium: 19.8, target: 20 },
-  { month: 'Apr', premium: 26.3, target: 22 },
-  { month: 'May', premium: 31.2, target: 24 },
-  { month: 'Jun', premium: 28.7, target: 26 },
-  { month: 'Jul', premium: 34.5, target: 28 },
-  { month: 'Aug', premium: 38.2, target: 30 },
-  { month: 'Sep', premium: 42.1, target: 32 },
-  { month: 'Oct', premium: 39.8, target: 34 },
-  { month: 'Nov', premium: 45.6, target: 36 },
-  { month: 'Dec', premium: 51.3, target: 38 },
-]
-
-const claimsByType = [
-  { name: 'Motor', value: 421, color: '#1D4ED8' },
-  { name: 'Health', value: 318, color: '#16A34A' },
-  { name: 'Property', value: 187, color: '#7C3AED' },
-  { name: 'Marine', value: 64, color: '#0EA5E9' },
-  { name: 'Life', value: 51, color: '#F59E0B' },
-]
-
-const weeklyActivity = [
-  { day: 'Mon', new: 24, resolved: 19 },
-  { day: 'Tue', new: 31, resolved: 27 },
-  { day: 'Wed', new: 18, resolved: 22 },
-  { day: 'Thu', new: 42, resolved: 35 },
-  { day: 'Fri', new: 37, resolved: 30 },
-  { day: 'Sat', new: 12, resolved: 14 },
-  { day: 'Sun', new: 8, resolved: 10 },
-]
+// ── Chart data is derived live in OverviewSection via dashboardData helpers ───
 
 type ClaimStatus = 'Under Review' | 'Approved' | 'Denied' | 'Pending Docs' | 'Escalated'
 type ClaimUrgency = 'Critical' | 'High' | 'Medium' | 'Low'
@@ -192,24 +170,89 @@ function KpiCard({ label, value, sub, trend, trendDir, accent }: {
 }
 
 // ── Overview section ──────────────────────────────────────────────────────────
-function OverviewSection() {
+function OverviewSection({ onNavigate }: { onNavigate: (view: AdminView) => void }) {
+  const [version, setVersion] = useState(0)
+  const { isEnabled } = useFeatures()
+
+  useEffect(() => onMemoryDataChange(() => setVersion(v => v + 1)), [])
+
+  const metrics = useMemo(() => {
+    void version
+    return getDashboardMetrics()
+  }, [version])
+
+  const recent = useMemo(() => {
+    void version
+    return getRecentActivity(10)
+  }, [version])
+
+  const health = useMemo(() => {
+    void version
+    return getModuleHealth()
+  }, [version])
+
+  const premiumTrend = useMemo(() => {
+    void version
+    return getPremiumTrendFromPolicies()
+  }, [version])
+
+  const policiesByType = useMemo(() => {
+    void version
+    return getPoliciesByProductType()
+  }, [version])
+
+  const weeklyActivity = useMemo(() => {
+    void version
+    return getWeeklyCreateActivity()
+  }, [version])
+
+  const policiesByTypeTotal = policiesByType.reduce((sum, d) => sum + d.value, 0)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* KPIs */}
+      {/* KPIs — live module values, same card layout */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-        <KpiCard label="Active Policyholders" value="183,421" sub="Across 36 states + FCT" trend="↑ 8.3% vs. last month" trendDir="up" accent={T.blue} />
-        <KpiCard label="Total Premiums (YTD)" value="₦4.21B" sub="Target: ₦5.0B by Dec" trend="84.2% of annual target" trendDir="neutral" accent={T.amber} />
-        <KpiCard label="Pending Claims" value="247" sub="In active queue" trend="↑ 12 new since yesterday" trendDir="down" accent={T.red} />
-        <KpiCard label="Settlement Rate" value="98.1%" sub="Valid claims paid" trend="↑ 0.4pp vs. Q3 avg" trendDir="up" accent={T.green} />
+        <KpiCard
+          label="Active Customers"
+          value={metrics.customers.active.toLocaleString()}
+          sub={`${metrics.customers.total} total · ${metrics.customers.individuals} ind. / ${metrics.customers.corporate} corp.`}
+          trend={`${metrics.customers.individuals} individuals · ${metrics.customers.corporate} corporate`}
+          trendDir="neutral"
+          accent={T.blue}
+        />
+        <KpiCard
+          label="Total Premium"
+          value={formatNairaCompact(metrics.policies.totalPremium)}
+          sub={`Sum insured ${formatNairaCompact(metrics.policies.totalSumInsured)}`}
+          trend={`${metrics.policies.total} policies in book`}
+          trendDir="neutral"
+          accent={T.amber}
+        />
+        <KpiCard
+          label="Pending Policies"
+          value={String(metrics.policies.pending)}
+          sub={`${metrics.policies.expired} expired · ${metrics.policies.cancelled} cancelled`}
+          trend={`${metrics.policies.active} active`}
+          trendDir={metrics.policies.pending > 0 ? 'down' : 'up'}
+          accent={T.red}
+        />
+        <KpiCard
+          label="Active Products"
+          value={String(metrics.products.active)}
+          sub={`${metrics.products.total} total · ${metrics.products.inactive} inactive`}
+          trend={`${metrics.products.active} of ${metrics.products.total} active`}
+          trendDir="up"
+          accent={T.green}
+        />
       </div>
 
-      {/* Secondary KPIs */}
+      {/* Secondary KPIs — live policy / product / customer counts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {[
-          { label: 'Avg. Settlement Time', val: '18.4 hrs', mono: true },
-          { label: 'Escalated Claims', val: '6', mono: true },
-          { label: 'New Policies (Nov)', val: '4,821', mono: true },
-          { label: 'Lapsed Policies', val: '312', mono: true },
+          { label: 'Total Policies', val: String(metrics.policies.total) },
+          { label: 'Active Policies', val: String(metrics.policies.active) },
+          { label: 'Total Customers', val: String(metrics.customers.total) },
+          { label: 'Total Products', val: String(metrics.products.total) },
         ].map(s => (
           <div key={s.label} style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <p style={{ fontFamily: T.body, fontSize: 13, color: T.muted }}>{s.label}</p>
@@ -225,7 +268,7 @@ function OverviewSection() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
             <div>
               <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>Monthly Premium Revenue</p>
-              <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>₦ millions · FY 2024</p>
+              <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>₦ millions · from live policies</p>
             </div>
             <div style={{ display: 'flex', gap: 16 }}>
               {[{ dot: T.blue, label: 'Actual' }, { dot: T.border, label: 'Target' }].map(l => (
@@ -254,23 +297,23 @@ function OverviewSection() {
           </ResponsiveContainer>
         </div>
 
-        {/* Claims by type */}
+        {/* Policies by type (replaces demo claims pie with live policy mix) */}
         <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '24px' }}>
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>Claims by Type</p>
-            <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>1,041 total YTD</p>
+            <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>Policies by Type</p>
+            <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{policiesByTypeTotal} total live</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <ResponsiveContainer width="50%" height={140}>
               <PieChart>
-                <Pie data={claimsByType} cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={2} dataKey="value">
-                  {claimsByType.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                <Pie data={policiesByType} cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={2} dataKey="value">
+                  {policiesByType.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontFamily: T.mono, fontSize: 11, background: T.text, border: 'none', borderRadius: 8, color: 'white' }} />
               </PieChart>
             </ResponsiveContainer>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {claimsByType.map(d => (
+              {policiesByType.map(d => (
                 <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
@@ -279,6 +322,9 @@ function OverviewSection() {
                   <span style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 600, color: T.text }}>{d.value}</span>
                 </div>
               ))}
+              {policiesByType.length === 0 && (
+                <span style={{ fontFamily: T.body, fontSize: 12, color: T.muted }}>No policies yet</span>
+              )}
             </div>
           </div>
         </div>
@@ -288,11 +334,11 @@ function OverviewSection() {
       <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div>
-            <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>Claims Activity This Week</p>
-            <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>New submissions vs. resolved</p>
+            <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>Module Activity by Weekday</p>
+            <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Creates vs. active policy updates</p>
           </div>
           <div style={{ display: 'flex', gap: 16 }}>
-            {[{ dot: T.blue, label: 'New' }, { dot: T.green, label: 'Resolved' }].map(l => (
+            {[{ dot: T.blue, label: 'New' }, { dot: T.green, label: 'Active' }].map(l => (
               <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: l.dot }} />
                 <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{l.label}</span>
@@ -310,6 +356,88 @@ function OverviewSection() {
             <Bar dataKey="resolved" fill={T.green} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Quick actions + health + recent activity */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.4fr', gap: 20 }}>
+        <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '22px 24px' }}>
+          <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>Quick Actions</p>
+          <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 16 }}>Jump to module</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {isEnabled('products') && (
+              <button
+                onClick={() => onNavigate('products')}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 9, background: T.blue, color: 'white', fontFamily: T.display, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              >
+                Create Product
+              </button>
+            )}
+            {isEnabled('customers') && (
+              <button
+                onClick={() => onNavigate('policyholders')}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 9, background: T.canvas, color: T.text, fontFamily: T.display, fontSize: 13, fontWeight: 700, border: `1px solid ${T.border}`, cursor: 'pointer', textAlign: 'left' }}
+              >
+                Create Customer
+              </button>
+            )}
+            {isEnabled('policies') && (
+              <button
+                onClick={() => onNavigate('premiums')}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 9, background: T.canvas, color: T.text, fontFamily: T.display, fontSize: 13, fontWeight: 700, border: `1px solid ${T.border}`, cursor: 'pointer', textAlign: 'left' }}
+              >
+                Issue Policy
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '22px 24px' }}>
+          <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>System Status</p>
+          <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 16 }}>Data source · in-memory</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {health.map(h => (
+              <div key={h.module} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${T.border}` }}>
+                <div>
+                  <p style={{ fontFamily: T.body, fontSize: 13, fontWeight: 600, color: T.text }}>{h.module}</p>
+                  <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginTop: 2 }}>{h.detail}</p>
+                </div>
+                <span style={{
+                  padding: '3px 9px',
+                  borderRadius: 20,
+                  background: h.status === 'Healthy' ? T.greenLight : T.amberLight,
+                  fontFamily: T.mono,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: h.status === 'Healthy' ? T.green : '#92400E',
+                }}>
+                  {h.status}
+                </span>
+              </div>
+            ))}
+            <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginTop: 4 }}>Data Source: In-memory</p>
+          </div>
+        </div>
+
+        <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '22px 24px' }}>
+          <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>Recent Activity</p>
+          <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 16 }}>Latest 10 · by createdAt</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxHeight: 280, overflowY: 'auto' }}>
+            {recent.map(item => (
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: `1px solid ${T.border}` }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontFamily: T.body, fontSize: 13, fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</p>
+                  <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginTop: 2 }}>{item.module} · {item.subtitle}</p>
+                </div>
+                <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, flexShrink: 0 }}>
+                  {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                </span>
+              </div>
+            ))}
+            {recent.length === 0 && (
+              <p style={{ fontFamily: T.body, fontSize: 13, color: T.muted, padding: '12px 0' }}>No recent activity.</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -637,7 +765,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
 
         {/* Content */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
-          {activeView === 'overview' && (isEnabled('dashboard') || isEnabled('analytics')) && <OverviewSection />}
+          {activeView === 'overview' && (isEnabled('dashboard') || isEnabled('analytics')) && <OverviewSection onNavigate={setView} />}
           {activeView === 'claims' && isEnabled('claims') && <ClaimsSection />}
           {activeView === 'policyholders' && isEnabled('customers') && <CustomerManagement />}
           {activeView === 'premiums' && isEnabled('policies') && <PolicyManagement />}

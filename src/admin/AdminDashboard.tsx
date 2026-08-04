@@ -7,6 +7,7 @@ import { useBranding } from '../config/BrandingContext'
 import { useFeatures } from '../config/FeatureContext'
 import type { FeatureKey } from '../config/features'
 import CompanySettings from '../settings/CompanySettings'
+import { ProductManagement } from '../modules/products'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -105,13 +106,14 @@ const allClaims: Claim[] = [
 ]
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
-type AdminView = 'overview' | 'claims' | 'policyholders' | 'premiums' | 'reports' | 'settings'
+type AdminView = 'overview' | 'claims' | 'policyholders' | 'premiums' | 'products' | 'reports' | 'settings'
 
 const navItems: { id: AdminView; label: string; icon: React.ReactNode; badge?: number; feature: FeatureKey }[] = [
   { id: 'overview', label: 'Overview', icon: <OverviewIcon />, feature: 'dashboard' },
   { id: 'claims', label: 'Claims', icon: <ClaimsIcon />, badge: 14, feature: 'claims' },
   { id: 'policyholders', label: 'Policyholders', icon: <PeopleIcon />, feature: 'customers' },
   { id: 'premiums', label: 'Premiums', icon: <PremiumIcon />, feature: 'policies' },
+  { id: 'products', label: 'Products', icon: <ProductsIcon />, feature: 'products' },
   { id: 'reports', label: 'Reports', icon: <ReportIcon />, feature: 'reports' },
   { id: 'settings', label: 'Settings', icon: <SettingsIcon />, feature: 'settings' },
 ]
@@ -121,6 +123,7 @@ function ClaimsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="curr
 function PeopleIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.314 2.686-5 6-5s6 1.686 6 5"/><circle cx="15" cy="8" r="2"/><path d="M17 17c0-2-1.3-3.5-3-4"/></svg> }
 function PremiumIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M10 2L3 7v11h14V7L10 2z"/><path d="M10 12v3M10 8v2"/></svg> }
 function ReportIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M4 2h8l4 4v12a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M12 2v4h4M7 10h6M7 13h4"/></svg> }
+function ProductsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M3 5l7-2 7 2v10l-7 2-7-2V5z"/><path d="M10 3v14M3 5l7 2 7-2"/></svg> }
 function SettingsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"/></svg> }
 function BellIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M10 2a6 6 0 00-6 6v3l-1 2h14l-1-2V8a6 6 0 00-6-6z"/><path d="M8.5 17a1.5 1.5 0 003 0"/></svg> }
 function SearchIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 16, height: 16 }}><circle cx="9" cy="9" r="6"/><path d="M14 14l3 3"/></svg> }
@@ -636,6 +639,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
           {activeView === 'claims' && isEnabled('claims') && <ClaimsSection />}
           {activeView === 'policyholders' && isEnabled('customers') && <PlaceholderSection title="Policyholders" />}
           {activeView === 'premiums' && isEnabled('policies') && <PlaceholderSection title="Premium Revenue" />}
+          {activeView === 'products' && isEnabled('products') && <ProductManagement />}
           {activeView === 'reports' && isEnabled('reports') && <PlaceholderSection title="Reports & Analytics" />}
           {activeView === 'settings' && <CompanySettings />}
         </main>

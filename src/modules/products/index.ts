@@ -13,3 +13,5 @@ export type {
 
 export { defaultProducts } from './config/defaultProducts'
 export { ProductService } from './services/ProductService'
+export { default as ProductForm } from './components/ProductForm'
+export { default as ProductManagement } from './pages/ProductManagement'

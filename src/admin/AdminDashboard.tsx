@@ -11,6 +11,7 @@ import { ProductManagement } from '../modules/products'
 import { CustomerManagement } from '../modules/customers'
 import { PolicyManagement } from '../modules/policies'
 import { ClaimManagement } from '../modules/claims'
+import { ReportsDashboard } from '../modules/reports'
 import { UserManagement } from '../modules/users'
 import { onMemoryDataChange } from './memoryDataEvents'
 import {
@@ -392,10 +393,18 @@ function OverviewSection({ onNavigate }: { onNavigate: (view: AdminView) => void
             )}
             {isEnabled('claims') && (
               <button
-                onClick={() => onNavigate('reports')}
+                onClick={() => onNavigate('claims')}
                 style={{ width: '100%', padding: '11px 14px', borderRadius: 9, background: T.canvas, color: T.text, fontFamily: T.display, fontSize: 13, fontWeight: 700, border: `1px solid ${T.border}`, cursor: 'pointer', textAlign: 'left' }}
               >
                 File Claim
+              </button>
+            )}
+            {isEnabled('reports') && (
+              <button
+                onClick={() => onNavigate('reports')}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 9, background: T.canvas, color: T.text, fontFamily: T.display, fontSize: 13, fontWeight: 700, border: `1px solid ${T.border}`, cursor: 'pointer', textAlign: 'left' }}
+              >
+                Open Reports
               </button>
             )}
             {isEnabled('users') && (
@@ -461,16 +470,6 @@ function OverviewSection({ onNavigate }: { onNavigate: (view: AdminView) => void
   )
 }
 
-// â”€â”€ Placeholder sections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function PlaceholderSection({ title }: { title: string }) {
-  return (
-    <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '60px', textAlign: 'center' }}>
-      <p style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>{title}</p>
-      <p style={{ fontFamily: T.body, fontSize: 14, color: T.muted }}>This section is under construction.</p>
-    </div>
-  )
-}
-
 // â”€â”€ Main dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function AdminDashboard({ onExit }: { onExit: () => void }) {
   const [view, setView] = useState<AdminView>('overview')
@@ -480,7 +479,6 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
   const visibleNav = navItems.filter(item => {
     if (item.id === 'settings') return isEnabled('settings') || view === 'settings'
     if (item.id === 'overview') return isEnabled('dashboard') || isEnabled('analytics')
-    if (item.id === 'reports') return isEnabled('reports') || isEnabled('claims')
     return isEnabled(item.feature)
   })
   const activeView = visibleNav.some(n => n.id === view)
@@ -573,8 +571,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
           {activeView === 'premiums' && isEnabled('policies') && <PolicyManagement />}
           {activeView === 'products' && isEnabled('products') && <ProductManagement />}
           {activeView === 'users' && isEnabled('users') && <UserManagement />}
-          {activeView === 'reports' && isEnabled('claims') && <ClaimManagement />}
-          {activeView === 'reports' && isEnabled('reports') && !isEnabled('claims') && <PlaceholderSection title="Reports & Analytics" />}
+          {activeView === 'reports' && isEnabled('reports') && <ReportsDashboard />}
           {activeView === 'settings' && <CompanySettings />}
         </main>
       </div>

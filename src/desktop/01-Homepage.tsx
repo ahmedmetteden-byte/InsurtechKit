@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Icon } from '../icons'
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (p: Page) => void }
@@ -333,6 +333,7 @@ function CoveragePlans({ onNavigate }: Props) {
 
 function HowItWorks({ onNavigate }: Props) {
   const [activeStep, setActiveStep] = useState(0)
+  const { branding } = useBranding()
 
   const steps = [
     {
@@ -436,6 +437,7 @@ function HowItWorks({ onNavigate }: Props) {
 // ── TESTIMONIALS ──────────────────────────────────────────────────────────────
 
 function Testimonials() {
+  const { branding } = useBranding()
   const reviews = [
     {
       name: 'Emeka Okafor', role: 'Business Owner', location: 'Lagos Island',
@@ -506,6 +508,7 @@ function Testimonials() {
 // ── APP DOWNLOAD CTA ──────────────────────────────────────────────────────────
 
 function AppBanner({ onNavigate: _onNavigate }: Props) {
+  const { branding } = useBranding()
   return (
     <section style={{ background: '#060F2A', padding: '80px 24px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', right: '5%', top: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(29,78,216,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />

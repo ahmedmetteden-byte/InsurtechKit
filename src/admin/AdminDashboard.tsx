@@ -3,7 +3,8 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
+import CompanySettings from '../settings/CompanySettings'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -537,6 +538,7 @@ function PlaceholderSection({ title }: { title: string }) {
 // ── Main dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard({ onExit }: { onExit: () => void }) {
   const [view, setView] = useState<AdminView>('overview')
+  const { branding } = useBranding()
 
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: T.body, background: T.canvas, overflow: 'hidden' }}>
@@ -623,7 +625,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
           {view === 'policyholders' && <PlaceholderSection title="Policyholders" />}
           {view === 'premiums' && <PlaceholderSection title="Premium Revenue" />}
           {view === 'reports' && <PlaceholderSection title="Reports & Analytics" />}
-          {view === 'settings' && <PlaceholderSection title="Settings" />}
+          {view === 'settings' && <CompanySettings />}
         </main>
       </div>
     </div>

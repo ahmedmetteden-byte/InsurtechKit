@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
+import type { BrandingConfig } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (p: Page) => void }
@@ -15,7 +16,8 @@ function Eyebrow({ children, light = false }: { children: string; light?: boolea
 }
 
 // ── Timeline data ─────────────────────────────────────────────────────────────
-const steps = [
+function getSteps(branding: BrandingConfig) {
+  return [
   {
     num: '01', title: 'Incident Occurs',
     color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE',
@@ -94,8 +96,8 @@ const steps = [
       'Claim closed and archived in your dashboard',
     ],
   },
-]
-
+  ]
+}
 // ── Claim Tracker widget ──────────────────────────────────────────────────────
 function ClaimTracker() {
   const events = [
@@ -163,6 +165,8 @@ function ClaimTracker() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ClaimsPage({ onNavigate }: Props) {
   const [activeStep, setActiveStep] = useState<number>(0)
+  const { branding } = useBranding()
+  const steps = getSteps(branding)
   const step = steps[activeStep]
 
   return (

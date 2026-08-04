@@ -6,7 +6,7 @@
  * Communicates brand identity, kit scope, and customisation steps.
  */
 
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
 
 interface Props {
     onEnter: () => void
@@ -73,6 +73,7 @@ interface Props {
   ]
   
   export default function Cover({ onEnter }: Props) {
+    const { branding } = useBranding()
     return (
       /*
        * Thumbnail frame — 1920 × 1080 (16:9)

@@ -3,20 +3,20 @@
  * Tabular view: policy number, dates, beneficiaries, download links.
  */
 import { useState } from 'react'
-import { branding } from '../config/branding'
-
-const policy = {
-  ref: 'POL-2024-00234', product: 'Motor Comprehensive', insurer: `${branding.companyName} via Leadway Assurance`,
-  status: 'Active', premium: '₦125,000', sumInsured: '₦5,000,000',
-  startDate: '1 Jan 2024', endDate: '31 Dec 2024', issueDate: '28 Dec 2023',
-  vehicle: 'Toyota Camry 2021 · LAG-123-AA', colour: 'Silver',
-  beneficiaries: [
-    { name: 'Amaka Okafor (Primary)', rel: 'Self', share: '100%' },
-  ],
-}
+import { useBranding } from '../config/BrandingContext'
 
 export default function MobilePolicyDetails() {
+  const { branding } = useBranding()
   const [tab, setTab] = useState<'details' | 'docs'>('details')
+  const policy = {
+    ref: 'POL-2024-00234', product: 'Motor Comprehensive', insurer: `${branding.companyName} via Leadway Assurance`,
+    status: 'Active', premium: '₦125,000', sumInsured: '₦5,000,000',
+    startDate: '1 Jan 2024', endDate: '31 Dec 2024', issueDate: '28 Dec 2023',
+    vehicle: 'Toyota Camry 2021 · LAG-123-AA', colour: 'Silver',
+    beneficiaries: [
+      { name: 'Amaka Okafor (Primary)', rel: 'Self', share: '100%' },
+    ],
+  }
 
   return (
     <div style={{ fontFamily: 'var(--font-body)', background: '#F4F3EF', minHeight: '100vh', maxWidth: 390, margin: '0 auto' }}>

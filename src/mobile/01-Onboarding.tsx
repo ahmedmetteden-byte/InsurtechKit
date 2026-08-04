@@ -3,9 +3,10 @@
  * Splash screen + value proposition for new Nigerian users.
  * Screens: Welcome splash → App value props (3 slides) → Get Started CTA
  */
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
 
 export default function MobileOnboarding() {
+    const { branding } = useBranding()
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, padding: '40px 24px', fontFamily: 'var(--font-body)', background: '#060F2A', minHeight: '100vh', justifyContent: 'center' }}>
         <div style={{ width: 72, height: 72, borderRadius: 20, background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

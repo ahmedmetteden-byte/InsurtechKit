@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
+import type { BrandingConfig } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (_p: Page) => void }
@@ -26,6 +27,7 @@ const cities = [
 
 function NigeriaMap({ selected, onSelect }: { selected: string | null; onSelect: (id: string) => void }) {
   const [hovered, setHovered] = useState<string | null>(null)
+  const { branding } = useBranding()
 
   return (
     <div style={{ background: '#EFF6FF', borderRadius: 20, overflow: 'hidden', border: '1.5px solid #BFDBFE', position: 'relative' }}>
@@ -63,12 +65,14 @@ function NigeriaMap({ selected, onSelect }: { selected: string | null; onSelect:
 }
 
 // ── Offices ───────────────────────────────────────────────────────────────────
-const offices = [
+function getOffices(branding: BrandingConfig) {
+  return [
   { id: 'lagos', city: 'Lagos', label: 'Head Office', address: '14 Marina Street, Lagos Island, Lagos 101001', phone: '+234 1 900 0000', email: `lagos@${branding.emailDomain}`, hours: 'Mon–Fri 8am–6pm · Sat 9am–2pm', agents: 42, region: 'South West', img: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=600&h=280&fit=crop&auto=format', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
   { id: 'abuja', city: 'Abuja', label: 'FCT Office', address: 'Plot 1234 Adeola Hopewell, Central Business District, Abuja', phone: '+234 9 900 0000', email: `abuja@${branding.emailDomain}`, hours: 'Mon–Fri 8am–5pm · Sat 10am–1pm', agents: 18, region: 'North Central', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&h=280&fit=crop&auto=format', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
   { id: 'ph', city: 'Port Harcourt', label: 'South South Office', address: '7 Rumuola Road, Port Harcourt, Rivers State 500001', phone: '+234 84 900 000', email: `portharcourt@${branding.emailDomain}`, hours: 'Mon–Fri 8am–5pm', agents: 15, region: 'South South', img: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&h=280&fit=crop&auto=format', color: '#0EA5E9', bg: '#F0F9FF', border: '#BAE6FD' },
   { id: 'kano', city: 'Kano', label: 'North Office', address: '22 Ibrahim Taiwo Road, Kano Municipal, Kano State', phone: '+234 64 900 000', email: `kano@${branding.emailDomain}`, hours: 'Mon–Fri 8am–5pm · Sat 9am–12pm', agents: 12, region: 'North West', img: 'https://images.unsplash.com/photo-1575538439014-8b1df7a4a564?w=600&h=280&fit=crop&auto=format', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
-]
+  ]
+}
 
 // ── Agent Finder ──────────────────────────────────────────────────────────────
 const stateAgents: Record<string, { name: string; phone: string; city: string; specialty: string }[]> = {
@@ -101,6 +105,7 @@ const allStates = ['Select a state…', 'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra
 
 function AgentFinder() {
   const [selectedState, setSelectedState] = useState('')
+  const { branding } = useBranding()
   const agents = selectedState ? (stateAgents[selectedState] ?? []) : []
 
   return (
@@ -243,6 +248,8 @@ function ContactForm() {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ContactPage({ onNavigate: _onNavigate }: Props) {
+  const { branding } = useBranding()
+  const offices = getOffices(branding)
   const [selectedOffice, setSelectedOffice] = useState<string>('lagos')
   const office = offices.find(o => o.id === selectedOffice) ?? offices[0]
 

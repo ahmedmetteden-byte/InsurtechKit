@@ -1,10 +1,12 @@
 import { Icon } from '../icons'
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
 import { Button, Row, Stack } from './ui'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 
 export default function Footer({ onNavigate }: { onNavigate: (p: Page) => void }) {
+  const { branding } = useBranding()
+
   return (
     <footer style={{ background: '#0F172A', color: 'white' }}>
 

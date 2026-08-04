@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
 import { Button, Row } from './ui'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
@@ -21,6 +21,7 @@ const links: { label: string; page: Page }[] = [
 
 export default function NavBar({ current, onNavigate, onAdminClick, onMobileClick }: NavBarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { branding } = useBranding()
 
   return (
     <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)' }}>

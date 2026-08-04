@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
-import { branding } from '../config/branding'
+import { useBranding } from '../config/BrandingContext'
+import type { BrandingConfig } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
 interface Props { onNavigate: (p: Page) => void }
@@ -201,7 +202,8 @@ function PricingCalculator({ productId }: { productId: string }) {
 }
 
 // ── FAQ ───────────────────────────────────────────────────────────────────────
-const faqData = [
+function getFaqData(branding: BrandingConfig) {
+  return [
   { q: 'Is motor insurance legally required in Nigeria?', a: `Yes. The Motor Vehicles (Third Party Insurance) Act mandates third-party liability cover for every vehicle on Nigerian roads. Driving without a valid certificate is a criminal offence punishable by fine or imprisonment. ${branding.companyName} issues NAICOM-approved certificates instantly upon payment.` },
   { q: 'How quickly do I receive my insurance certificate?', a: "Your NAICOM-approved certificate is emailed and SMS'd within 5 minutes of successful payment. A PDF is also available immediately in your dashboard for download, printing, or sharing with FRSC officers." },
   { q: 'Can I pay my premium in monthly instalments?', a: "Yes. Monthly, quarterly, and annual payment options are available. Monthly payments incur a 2% administrative charge. All payments are processed through CBN-approved gateways (Paystack, Flutterwave, NIBSS)." },
@@ -210,10 +212,13 @@ const faqData = [
   { q: 'What is the difference between Third-Party and Comprehensive cover?', a: "Third-Party Only covers damage or injury you cause to others. It does NOT cover your own vehicle. Comprehensive cover includes third-party liability plus damage to your own vehicle from accidents, fire, theft, flood, and vandalism." },
   { q: `Is ${branding.companyName} regulated by NAICOM?`, a: `Yes. ${branding.companyName} is licensed by the National Insurance Commission (NAICOM), Licence No. ${branding.licenceNo}. All underwriting is performed by NAICOM-approved insurers. In case of dispute, you may escalate to the Nigerian Insurance Ombudsman at no cost.` },
   { q: 'Can I cover my vehicle if it is over 10 years old?', a: "Yes. We cover vehicles up to 20 years old. Premium rates are adjusted for vehicle age using a standard depreciation schedule. For vehicles over 15 years, Comprehensive cover is available on a market-value basis only." },
-]
+  ]
+}
 
 function FAQ({ color }: { color: string }) {
   const [open, setOpen] = useState<number | null>(0)
+  const { branding } = useBranding()
+  const faqData = getFaqData(branding)
 
   return (
     <section style={{ background: '#F8FAFC', padding: '80px 24px' }}>
@@ -271,6 +276,7 @@ function FAQ({ color }: { color: string }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProductPage({ onNavigate }: Props) {
   const [activeProduct, setActiveProduct] = useState('motor')
+  const { branding } = useBranding()
   const prod = products.find(p => p.id === activeProduct)!
 
   return (

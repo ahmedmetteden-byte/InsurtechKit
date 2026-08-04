@@ -1,5 +1,5 @@
 /**
- * Live dashboard aggregations from Product / Customer / Policy / Claim services.
+ * Live dashboard aggregations from Product / Customer / Policy / Claim / User services.
  * No duplicated stores — always reads current in-memory service state.
  */
 import { ClaimService } from '../modules/claims/services/ClaimService'
@@ -7,6 +7,10 @@ import { CustomerService } from '../modules/customers/services/CustomerService'
 import { customerDisplayName } from '../modules/customers/types/Customer'
 import { PolicyService } from '../modules/policies/services/PolicyService'
 import { ProductService } from '../modules/products/services/ProductService'
+import { UserService } from '../modules/users/services/UserService'
+import { userDisplayName } from '../modules/users/types/User'
+
+export type NamedCount = { name: string; count: number }
 
 export type DashboardMetrics = {
   products: {
@@ -39,14 +43,43 @@ export type DashboardMetrics = {
     totalClaimed: number
     totalApproved: number
   }
+  users: {
+    total: number
+    active: number
+    onlineToday: number
+    byDepartment: NamedCount[]
+    byRole: NamedCount[]
+  }
 }
 
 export type RecentActivityItem = {
   id: string
-  module: 'Product' | 'Customer' | 'Policy' | 'Claim'
+  module: 'Product' | 'Customer' | 'Policy' | 'Claim' | 'User'
   title: string
   subtitle: string
   createdAt: string
+}
+
+function isSameCalendarDay(iso: string, ref = new Date()): boolean {
+  if (!iso) return false
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return false
+  return (
+    d.getFullYear() === ref.getFullYear() &&
+    d.getMonth() === ref.getMonth() &&
+    d.getDate() === ref.getDate()
+  )
+}
+
+function countBy(values: string[]): NamedCount[] {
+  const map = new Map<string, number>()
+  for (const v of values) {
+    const key = v || 'Unknown'
+    map.set(key, (map.get(key) ?? 0) + 1)
+  }
+  return [...map.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
 export type ModuleHealth = {
@@ -60,6 +93,7 @@ export function getDashboardMetrics(): DashboardMetrics {
   const customers = CustomerService.getAll()
   const policies = PolicyService.getAll()
   const claims = ClaimService.getAll()
+  const users = UserService.getAll()
 
   return {
     products: {
@@ -91,6 +125,13 @@ export function getDashboardMetrics(): DashboardMetrics {
       paid: claims.filter(c => c.status === 'paid').length,
       totalClaimed: claims.reduce((sum, c) => sum + (c.claimAmount || 0), 0),
       totalApproved: claims.reduce((sum, c) => sum + (c.approvedAmount || 0), 0),
+    },
+    users: {
+      total: users.length,
+      active: users.filter(u => u.status === 'active').length,
+      onlineToday: users.filter(u => isSameCalendarDay(u.lastLogin)).length,
+      byDepartment: countBy(users.map(u => u.department)),
+      byRole: countBy(users.map(u => u.roleName)),
     },
   }
 }
@@ -128,7 +169,15 @@ export function getRecentActivity(limit = 10): RecentActivityItem[] {
     createdAt: c.createdAt,
   }))
 
-  return [...products, ...customers, ...policies, ...claims]
+  const users = UserService.getAll().map(u => ({
+    id: `user-${u.id}`,
+    module: 'User' as const,
+    title: userDisplayName(u),
+    subtitle: `${u.employeeId} · ${u.roleName}`,
+    createdAt: u.createdAt,
+  }))
+
+  return [...products, ...customers, ...policies, ...claims, ...users]
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0))
     .slice(0, limit)
 }
@@ -155,6 +204,11 @@ export function getModuleHealth(): ModuleHealth[] {
       module: 'Claims',
       status: m.claims.total > 0 ? 'Healthy' : 'Empty',
       detail: `${m.claims.total} in register`,
+    },
+    {
+      module: 'Users',
+      status: m.users.total > 0 ? 'Healthy' : 'Empty',
+      detail: `${m.users.total} in register`,
     },
   ]
 }
@@ -216,6 +270,10 @@ export function getWeeklyCreateActivity(): { day: string; new: number; resolved:
   for (const c of ClaimService.getAll()) {
     stamp(c.createdAt, created)
     if (c.status === 'paid' || c.status === 'approved') stamp(c.updatedAt || c.createdAt, activeLike)
+  }
+  for (const u of UserService.getAll()) {
+    stamp(u.createdAt, created)
+    if (u.status === 'active') stamp(u.updatedAt || u.createdAt, activeLike)
   }
 
   // Reorder Mon→Sun to match existing chart labels

@@ -11,6 +11,7 @@ import { ProductManagement } from '../modules/products'
 import { CustomerManagement } from '../modules/customers'
 import { PolicyManagement } from '../modules/policies'
 import { ClaimManagement } from '../modules/claims'
+import { UserManagement } from '../modules/users'
 import { onMemoryDataChange } from './memoryDataEvents'
 import {
   formatNairaCompact,
@@ -54,7 +55,7 @@ const T = {
 // â”€â”€ Chart data is derived live in OverviewSection via dashboardData helpers â”€â”€â”€
 
 // â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-type AdminView = 'overview' | 'claims' | 'policyholders' | 'premiums' | 'products' | 'reports' | 'settings'
+type AdminView = 'overview' | 'claims' | 'policyholders' | 'premiums' | 'products' | 'users' | 'reports' | 'settings'
 
 const navItems: { id: AdminView; label: string; icon: React.ReactNode; badge?: number; feature: FeatureKey }[] = [
   { id: 'overview', label: 'Overview', icon: <OverviewIcon />, feature: 'dashboard' },
@@ -62,6 +63,7 @@ const navItems: { id: AdminView; label: string; icon: React.ReactNode; badge?: n
   { id: 'policyholders', label: 'Policyholders', icon: <PeopleIcon />, feature: 'customers' },
   { id: 'premiums', label: 'Premiums', icon: <PremiumIcon />, feature: 'policies' },
   { id: 'products', label: 'Products', icon: <ProductsIcon />, feature: 'products' },
+  { id: 'users', label: 'Users', icon: <UsersIcon />, feature: 'users' },
   { id: 'reports', label: 'Reports', icon: <ReportIcon />, feature: 'reports' },
   { id: 'settings', label: 'Settings', icon: <SettingsIcon />, feature: 'settings' },
 ]
@@ -72,6 +74,7 @@ function PeopleIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="curr
 function PremiumIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M10 2L3 7v11h14V7L10 2z"/><path d="M10 12v3M10 8v2"/></svg> }
 function ReportIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M4 2h8l4 4v12a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M12 2v4h4M7 10h6M7 13h4"/></svg> }
 function ProductsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M3 5l7-2 7 2v10l-7 2-7-2V5z"/><path d="M10 3v14M3 5l7 2 7-2"/></svg> }
+function UsersIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><circle cx="7" cy="7" r="2.5"/><circle cx="14" cy="8" r="2"/><path d="M2 16c0-2.5 2.2-4 5-4s5 1.5 5 4"/><path d="M12 16c0-1.8 1.3-3.2 3-3.5"/></svg> }
 function SettingsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"/></svg> }
 function BellIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M10 2a6 6 0 00-6 6v3l-1 2h14l-1-2V8a6 6 0 00-6-6z"/><path d="M8.5 17a1.5 1.5 0 003 0"/></svg> }
 function ChevDownIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 14, height: 14 }}><path d="M5 8l5 5 5-5"/></svg> }
@@ -212,6 +215,54 @@ function OverviewSection({ onNavigate }: { onNavigate: (view: AdminView) => void
         ))}
       </div>
 
+      {/* Users KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        {[
+          { label: 'Total Users', val: String(metrics.users.total) },
+          { label: 'Active Users', val: String(metrics.users.active) },
+          { label: 'Online Today', val: String(metrics.users.onlineToday) },
+        ].map(s => (
+          <div key={s.label} style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ fontFamily: T.body, fontSize: 13, color: T.muted }}>{s.label}</p>
+            <p style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: '-0.02em' }}>{s.val}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Users by department / role */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '22px 24px' }}>
+          <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>Users by Department</p>
+          <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 16 }}>Live identity register</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {metrics.users.byDepartment.map(row => (
+              <div key={row.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${T.border}` }}>
+                <span style={{ fontFamily: T.body, fontSize: 13, color: T.muted }}>{row.name}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 13, fontWeight: 600, color: T.text }}>{row.count}</span>
+              </div>
+            ))}
+            {metrics.users.byDepartment.length === 0 && (
+              <p style={{ fontFamily: T.body, fontSize: 13, color: T.muted }}>No users yet</p>
+            )}
+          </div>
+        </div>
+        <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, padding: '22px 24px' }}>
+          <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>Users by Role</p>
+          <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 16 }}>Assigned roles</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {metrics.users.byRole.map(row => (
+              <div key={row.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${T.border}` }}>
+                <span style={{ fontFamily: T.body, fontSize: 13, color: T.muted }}>{row.name}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 13, fontWeight: 600, color: T.text }}>{row.count}</span>
+              </div>
+            ))}
+            {metrics.users.byRole.length === 0 && (
+              <p style={{ fontFamily: T.body, fontSize: 13, color: T.muted }}>No users yet</p>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 20 }}>
         {/* Premium trend */}
@@ -345,6 +396,14 @@ function OverviewSection({ onNavigate }: { onNavigate: (view: AdminView) => void
                 style={{ width: '100%', padding: '11px 14px', borderRadius: 9, background: T.canvas, color: T.text, fontFamily: T.display, fontSize: 13, fontWeight: 700, border: `1px solid ${T.border}`, cursor: 'pointer', textAlign: 'left' }}
               >
                 File Claim
+              </button>
+            )}
+            {isEnabled('users') && (
+              <button
+                onClick={() => onNavigate('users')}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 9, background: T.canvas, color: T.text, fontFamily: T.display, fontSize: 13, fontWeight: 700, border: `1px solid ${T.border}`, cursor: 'pointer', textAlign: 'left' }}
+              >
+                Manage Users
               </button>
             )}
           </div>
@@ -513,6 +572,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
           {activeView === 'policyholders' && isEnabled('customers') && <CustomerManagement />}
           {activeView === 'premiums' && isEnabled('policies') && <PolicyManagement />}
           {activeView === 'products' && isEnabled('products') && <ProductManagement />}
+          {activeView === 'users' && isEnabled('users') && <UserManagement />}
           {activeView === 'reports' && isEnabled('claims') && <ClaimManagement />}
           {activeView === 'reports' && isEnabled('reports') && !isEnabled('claims') && <PlaceholderSection title="Reports & Analytics" />}
           {activeView === 'settings' && <CompanySettings />}

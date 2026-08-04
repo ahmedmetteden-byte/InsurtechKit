@@ -8,6 +8,7 @@ import { useFeatures } from '../config/FeatureContext'
 import type { FeatureKey } from '../config/features'
 import CompanySettings from '../settings/CompanySettings'
 import { ProductManagement } from '../modules/products'
+import { CustomerManagement } from '../modules/customers'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -637,7 +638,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
         <main style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
           {activeView === 'overview' && (isEnabled('dashboard') || isEnabled('analytics')) && <OverviewSection />}
           {activeView === 'claims' && isEnabled('claims') && <ClaimsSection />}
-          {activeView === 'policyholders' && isEnabled('customers') && <PlaceholderSection title="Policyholders" />}
+          {activeView === 'policyholders' && isEnabled('customers') && <CustomerManagement />}
           {activeView === 'premiums' && isEnabled('policies') && <PlaceholderSection title="Premium Revenue" />}
           {activeView === 'products' && isEnabled('products') && <ProductManagement />}
           {activeView === 'reports' && isEnabled('reports') && <PlaceholderSection title="Reports & Analytics" />}

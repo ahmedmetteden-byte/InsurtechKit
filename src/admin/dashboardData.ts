@@ -1,7 +1,8 @@
 /**
- * Live dashboard aggregations from Product / Customer / Policy services.
+ * Live dashboard aggregations from Product / Customer / Policy / Claim services.
  * No duplicated stores — always reads current in-memory service state.
  */
+import { ClaimService } from '../modules/claims/services/ClaimService'
 import { CustomerService } from '../modules/customers/services/CustomerService'
 import { customerDisplayName } from '../modules/customers/types/Customer'
 import { PolicyService } from '../modules/policies/services/PolicyService'
@@ -28,11 +29,21 @@ export type DashboardMetrics = {
     totalPremium: number
     totalSumInsured: number
   }
+  claims: {
+    total: number
+    open: number
+    underReview: number
+    approved: number
+    rejected: number
+    paid: number
+    totalClaimed: number
+    totalApproved: number
+  }
 }
 
 export type RecentActivityItem = {
   id: string
-  module: 'Product' | 'Customer' | 'Policy'
+  module: 'Product' | 'Customer' | 'Policy' | 'Claim'
   title: string
   subtitle: string
   createdAt: string
@@ -48,6 +59,7 @@ export function getDashboardMetrics(): DashboardMetrics {
   const products = ProductService.getAll()
   const customers = CustomerService.getAll()
   const policies = PolicyService.getAll()
+  const claims = ClaimService.getAll()
 
   return {
     products: {
@@ -69,6 +81,16 @@ export function getDashboardMetrics(): DashboardMetrics {
       cancelled: policies.filter(p => p.status === 'cancelled').length,
       totalPremium: policies.reduce((sum, p) => sum + (p.premium || 0), 0),
       totalSumInsured: policies.reduce((sum, p) => sum + (p.sumInsured || 0), 0),
+    },
+    claims: {
+      total: claims.length,
+      open: claims.filter(c => c.status === 'open').length,
+      underReview: claims.filter(c => c.status === 'under_review').length,
+      approved: claims.filter(c => c.status === 'approved').length,
+      rejected: claims.filter(c => c.status === 'rejected').length,
+      paid: claims.filter(c => c.status === 'paid').length,
+      totalClaimed: claims.reduce((sum, c) => sum + (c.claimAmount || 0), 0),
+      totalApproved: claims.reduce((sum, c) => sum + (c.approvedAmount || 0), 0),
     },
   }
 }
@@ -98,7 +120,15 @@ export function getRecentActivity(limit = 10): RecentActivityItem[] {
     createdAt: p.createdAt,
   }))
 
-  return [...products, ...customers, ...policies]
+  const claims = ClaimService.getAll().map(c => ({
+    id: `claim-${c.id}`,
+    module: 'Claim' as const,
+    title: c.claimNumber,
+    subtitle: `${c.customerName} · ${c.policyNumber}`,
+    createdAt: c.createdAt,
+  }))
+
+  return [...products, ...customers, ...policies, ...claims]
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0))
     .slice(0, limit)
 }
@@ -120,6 +150,11 @@ export function getModuleHealth(): ModuleHealth[] {
       module: 'Policies',
       status: m.policies.total > 0 ? 'Healthy' : 'Empty',
       detail: `${m.policies.total} in force book`,
+    },
+    {
+      module: 'Claims',
+      status: m.claims.total > 0 ? 'Healthy' : 'Empty',
+      detail: `${m.claims.total} in register`,
     },
   ]
 }
@@ -177,6 +212,10 @@ export function getWeeklyCreateActivity(): { day: string; new: number; resolved:
   for (const p of PolicyService.getAll()) {
     stamp(p.createdAt, created)
     if (p.status === 'active') stamp(p.updatedAt || p.createdAt, activeLike)
+  }
+  for (const c of ClaimService.getAll()) {
+    stamp(c.createdAt, created)
+    if (c.status === 'paid' || c.status === 'approved') stamp(c.updatedAt || c.createdAt, activeLike)
   }
 
   // Reorder Mon→Sun to match existing chart labels

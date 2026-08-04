@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import NavBar from './components/NavBar'
 import Footer from './components/Footer'
+import { useFeatures } from './config/FeatureContext'
+import type { FeatureKey } from './config/features'
 
 // Desktop / 00-Cover — "Start Here" guide (shown first on launch)
 import Cover from './desktop/00-Cover'
@@ -24,12 +26,18 @@ import MobileClaimsSubmit  from './mobile/05-Claims-Submit'
 type Page = 'home' | 'product' | 'claims' | 'contact'
 type MobileScreen = 'onboarding' | 'dashboard' | 'quote' | 'policy' | 'claims'
 
-const mobileScreens: { id: MobileScreen; label: string }[] = [
+const pageFeature: Partial<Record<Page, FeatureKey>> = {
+  product: 'products',
+  claims: 'claims',
+  contact: 'agents',
+}
+
+const mobileScreens: { id: MobileScreen; label: string; feature?: FeatureKey }[] = [
   { id: 'onboarding', label: '01 Onboarding' },
-  { id: 'dashboard',  label: '02 Dashboard' },
-  { id: 'quote',      label: '03 Get Quote' },
-  { id: 'policy',     label: '04 Policy' },
-  { id: 'claims',     label: '05 Claims' },
+  { id: 'dashboard',  label: '02 Dashboard', feature: 'dashboard' },
+  { id: 'quote',      label: '03 Get Quote', feature: 'products' },
+  { id: 'policy',     label: '04 Policy', feature: 'policies' },
+  { id: 'claims',     label: '05 Claims', feature: 'claims' },
 ]
 
 export default function App() {
@@ -39,8 +47,11 @@ export default function App() {
   const [admin, setAdmin] = useState(false)
   const [mobile, setMobile] = useState(false)
   const [mobileScreen, setMobileScreen] = useState<MobileScreen>('onboarding')
+  const { isEnabled } = useFeatures()
 
   const navigate = (p: Page) => {
+    const feature = pageFeature[p]
+    if (feature && !isEnabled(feature)) return
     setPage(p)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -48,6 +59,17 @@ export default function App() {
   useEffect(() => {
     if (!showCover) window.scrollTo(0, 0)
   }, [page, showCover])
+
+  // If the active desktop page is disabled, fall back to home
+  useEffect(() => {
+    const feature = pageFeature[page]
+    if (feature && !isEnabled(feature)) setPage('home')
+  }, [page, isEnabled])
+
+  const visibleMobileScreens = mobileScreens.filter(s => !s.feature || isEnabled(s.feature))
+  const activeMobileScreen = visibleMobileScreens.some(s => s.id === mobileScreen)
+    ? mobileScreen
+    : (visibleMobileScreens[0]?.id ?? 'onboarding')
 
   // ── Admin mode — full-screen, no nav/footer
   if (admin) {
@@ -60,9 +82,9 @@ export default function App() {
       <div style={{ minHeight: '100vh', background: '#F8FAFC' }}>
         <div style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#0F172A', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.08em', textTransform: 'uppercase', marginRight: 8 }}>Mobile Preview</span>
-          {mobileScreens.map(s => (
+          {visibleMobileScreens.map(s => (
             <button key={s.id} onClick={() => setMobileScreen(s.id)}
-              style={{ padding: '6px 10px', borderRadius: 6, border: mobileScreen === s.id ? '1px solid rgba(255,255,255,0.35)' : '1px solid rgba(255,255,255,0.12)', background: mobileScreen === s.id ? 'rgba(255,255,255,0.12)' : 'transparent', color: mobileScreen === s.id ? 'white' : 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}>
+              style={{ padding: '6px 10px', borderRadius: 6, border: activeMobileScreen === s.id ? '1px solid rgba(255,255,255,0.35)' : '1px solid rgba(255,255,255,0.12)', background: activeMobileScreen === s.id ? 'rgba(255,255,255,0.12)' : 'transparent', color: activeMobileScreen === s.id ? 'white' : 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}>
               {s.label}
             </button>
           ))}
@@ -71,11 +93,11 @@ export default function App() {
             Exit Mobile
           </button>
         </div>
-        {mobileScreen === 'onboarding' && <MobileOnboarding />}
-        {mobileScreen === 'dashboard'  && <MobileDashboard />}
-        {mobileScreen === 'quote'      && <MobileGetQuote />}
-        {mobileScreen === 'policy'     && <MobilePolicyDetails />}
-        {mobileScreen === 'claims'     && <MobileClaimsSubmit />}
+        {activeMobileScreen === 'onboarding' && <MobileOnboarding />}
+        {activeMobileScreen === 'dashboard'  && isEnabled('dashboard') && <MobileDashboard />}
+        {activeMobileScreen === 'quote'      && isEnabled('products') && <MobileGetQuote />}
+        {activeMobileScreen === 'policy'     && isEnabled('policies') && <MobilePolicyDetails />}
+        {activeMobileScreen === 'claims'     && isEnabled('claims') && <MobileClaimsSubmit />}
       </div>
     )
   }
@@ -91,9 +113,9 @@ export default function App() {
       <NavBar current={page} onNavigate={navigate} onAdminClick={() => setAdmin(true)} onMobileClick={() => setMobile(true)} />
       <main>
         {page === 'home'    && <HomePage    onNavigate={navigate} />}
-        {page === 'product' && <ProductPage onNavigate={navigate} />}
-        {page === 'claims'  && <ClaimsPage  onNavigate={navigate} />}
-        {page === 'contact' && <ContactPage onNavigate={navigate} />}
+        {page === 'product' && isEnabled('products') && <ProductPage onNavigate={navigate} />}
+        {page === 'claims'  && isEnabled('claims') && <ClaimsPage  onNavigate={navigate} />}
+        {page === 'contact' && isEnabled('agents') && <ContactPage onNavigate={navigate} />}
       </main>
       <Footer onNavigate={navigate} />
     </div>

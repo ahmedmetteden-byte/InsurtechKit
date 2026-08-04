@@ -4,6 +4,8 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
 import { useBranding } from '../config/BrandingContext'
+import { useFeatures } from '../config/FeatureContext'
+import type { FeatureKey } from '../config/features'
 import CompanySettings from '../settings/CompanySettings'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
@@ -105,13 +107,13 @@ const allClaims: Claim[] = [
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 type AdminView = 'overview' | 'claims' | 'policyholders' | 'premiums' | 'reports' | 'settings'
 
-const navItems: { id: AdminView; label: string; icon: React.ReactNode; badge?: number }[] = [
-  { id: 'overview', label: 'Overview', icon: <OverviewIcon /> },
-  { id: 'claims', label: 'Claims', icon: <ClaimsIcon />, badge: 14 },
-  { id: 'policyholders', label: 'Policyholders', icon: <PeopleIcon /> },
-  { id: 'premiums', label: 'Premiums', icon: <PremiumIcon /> },
-  { id: 'reports', label: 'Reports', icon: <ReportIcon /> },
-  { id: 'settings', label: 'Settings', icon: <SettingsIcon /> },
+const navItems: { id: AdminView; label: string; icon: React.ReactNode; badge?: number; feature: FeatureKey }[] = [
+  { id: 'overview', label: 'Overview', icon: <OverviewIcon />, feature: 'dashboard' },
+  { id: 'claims', label: 'Claims', icon: <ClaimsIcon />, badge: 14, feature: 'claims' },
+  { id: 'policyholders', label: 'Policyholders', icon: <PeopleIcon />, feature: 'customers' },
+  { id: 'premiums', label: 'Premiums', icon: <PremiumIcon />, feature: 'policies' },
+  { id: 'reports', label: 'Reports', icon: <ReportIcon />, feature: 'reports' },
+  { id: 'settings', label: 'Settings', icon: <SettingsIcon />, feature: 'settings' },
 ]
 
 function OverviewIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg> }
@@ -539,6 +541,16 @@ function PlaceholderSection({ title }: { title: string }) {
 export default function AdminDashboard({ onExit }: { onExit: () => void }) {
   const [view, setView] = useState<AdminView>('overview')
   const { branding } = useBranding()
+  const { isEnabled } = useFeatures()
+
+  const visibleNav = navItems.filter(item => {
+    if (item.id === 'settings') return isEnabled('settings') || view === 'settings'
+    if (item.id === 'overview') return isEnabled('dashboard') || isEnabled('analytics')
+    return isEnabled(item.feature)
+  })
+  const activeView = visibleNav.some(n => n.id === view)
+    ? view
+    : (visibleNav[0]?.id ?? 'settings')
 
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: T.body, background: T.canvas, overflow: 'hidden' }}>
@@ -559,12 +571,12 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
 
         {/* Nav */}
         <nav style={{ padding: '12px 10px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {navItems.map(item => (
+          {visibleNav.map(item => (
             <button key={item.id} onClick={() => setView(item.id)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderRadius: 8, background: view === item.id ? 'rgba(245,158,11,0.12)' : 'transparent', border: view === item.id ? `1px solid rgba(245,158,11,0.2)` : '1px solid transparent', cursor: 'pointer', transition: 'all 0.15s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: view === item.id ? T.amber : T.sidebarText }}>
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderRadius: 8, background: activeView === item.id ? 'rgba(245,158,11,0.12)' : 'transparent', border: activeView === item.id ? `1px solid rgba(245,158,11,0.2)` : '1px solid transparent', cursor: 'pointer', transition: 'all 0.15s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: activeView === item.id ? T.amber : T.sidebarText }}>
                 {item.icon}
-                <span style={{ fontFamily: T.body, fontSize: 13, fontWeight: view === item.id ? 700 : 400, color: view === item.id ? T.amber : T.sidebarText }}>{item.label}</span>
+                <span style={{ fontFamily: T.body, fontSize: 13, fontWeight: activeView === item.id ? 700 : 400, color: activeView === item.id ? T.amber : T.sidebarText }}>{item.label}</span>
               </div>
               {item.badge && (
                 <span style={{ padding: '2px 7px', borderRadius: 10, background: T.red, fontFamily: T.mono, fontSize: 10, fontWeight: 700, color: 'white' }}>{item.badge}</span>
@@ -588,7 +600,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
         <header style={{ background: T.card, borderBottom: `1px solid ${T.border}`, padding: '0 28px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <p style={{ fontFamily: T.display, fontSize: 15, fontWeight: 800, color: T.text, letterSpacing: '-0.01em', lineHeight: 1 }}>
-              {navItems.find(n => n.id === view)?.label ?? 'Dashboard'}
+              {navItems.find(n => n.id === activeView)?.label ?? 'Dashboard'}
             </p>
             <p style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginTop: 1 }}>Mon, 25 Nov 2024 · 14:37 WAT</p>
           </div>
@@ -620,12 +632,12 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
 
         {/* Content */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
-          {view === 'overview' && <OverviewSection />}
-          {view === 'claims' && <ClaimsSection />}
-          {view === 'policyholders' && <PlaceholderSection title="Policyholders" />}
-          {view === 'premiums' && <PlaceholderSection title="Premium Revenue" />}
-          {view === 'reports' && <PlaceholderSection title="Reports & Analytics" />}
-          {view === 'settings' && <CompanySettings />}
+          {activeView === 'overview' && (isEnabled('dashboard') || isEnabled('analytics')) && <OverviewSection />}
+          {activeView === 'claims' && isEnabled('claims') && <ClaimsSection />}
+          {activeView === 'policyholders' && isEnabled('customers') && <PlaceholderSection title="Policyholders" />}
+          {activeView === 'premiums' && isEnabled('policies') && <PlaceholderSection title="Premium Revenue" />}
+          {activeView === 'reports' && isEnabled('reports') && <PlaceholderSection title="Reports & Analytics" />}
+          {activeView === 'settings' && <CompanySettings />}
         </main>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Icon } from '../icons'
 import { useBranding } from '../config/BrandingContext'
+import { useFeatures } from '../config/FeatureContext'
+import type { FeatureKey } from '../config/features'
 import { Button, Row } from './ui'
 
 type Page = 'home' | 'product' | 'claims' | 'contact'
@@ -12,16 +14,18 @@ interface NavBarProps {
   onMobileClick?: () => void
 }
 
-const links: { label: string; page: Page }[] = [
+const links: { label: string; page: Page; feature?: FeatureKey }[] = [
   { label: 'Home', page: 'home' },
-  { label: 'Coverage', page: 'product' },
-  { label: 'Claims', page: 'claims' },
-  { label: 'Contact', page: 'contact' },
+  { label: 'Coverage', page: 'product', feature: 'products' },
+  { label: 'Claims', page: 'claims', feature: 'claims' },
+  { label: 'Contact', page: 'contact', feature: 'agents' },
 ]
 
 export default function NavBar({ current, onNavigate, onAdminClick, onMobileClick }: NavBarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { branding } = useBranding()
+  const { isEnabled } = useFeatures()
+  const visibleLinks = links.filter(l => !l.feature || isEnabled(l.feature))
 
   return (
     <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)' }}>
@@ -68,7 +72,7 @@ export default function NavBar({ current, onNavigate, onAdminClick, onMobileClic
 
         {/* Desktop nav links — Auto Layout row, each link hugs its label */}
         <Row gap={2} wrap={false} className="hidden md:flex" style={{ flex: 1, justifyContent: 'center' }}>
-          {links.map(l => (
+          {visibleLinks.map(l => (
             <button key={l.page} onClick={() => onNavigate(l.page)}
               /*
                * Auto Layout: padding defines spacing, NOT width.
@@ -128,7 +132,7 @@ export default function NavBar({ current, onNavigate, onAdminClick, onMobileClic
       {/* Mobile menu — each item is a full-width button that hugs its content */}
       {mobileOpen && (
         <div style={{ borderTop: '1px solid var(--border)', background: 'white', padding: '12px 20px 20px' }}>
-          {links.map(l => (
+          {visibleLinks.map(l => (
             <button key={l.page} onClick={() => { onNavigate(l.page); setMobileOpen(false) }}
               style={{ display: 'flex', width: '100%', padding: '12px 0', textAlign: 'left', border: 'none', background: 'none', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: current === l.page ? 600 : 400, color: current === l.page ? '#1D4ED8' : '#334155', cursor: 'pointer', borderBottom: '1px solid #F1F5F9' }}>
               {l.label}

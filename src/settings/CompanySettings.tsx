@@ -5,6 +5,8 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { Button, Stack } from '../components/ui'
 import { useBranding } from '../config/BrandingContext'
+import { useFeatures } from '../config/FeatureContext'
+import { FEATURE_KEYS, FEATURE_LABELS, type FeatureKey } from '../config/features'
 import type { BrandingConfig } from '../config/branding'
 
 type FormState = {
@@ -79,6 +81,7 @@ function Field({
 
 export default function CompanySettings() {
   const { branding, updateBranding, resetBranding } = useBranding()
+  const { features, setFeature, resetFeatures } = useFeatures()
   const [form, setForm] = useState<FormState>(() => toForm(branding))
   const [saved, setSaved] = useState(false)
 
@@ -113,6 +116,7 @@ export default function CompanySettings() {
 
   const handleReset = () => {
     resetBranding()
+    resetFeatures()
     setSaved(false)
   }
 
@@ -204,6 +208,46 @@ export default function CompanySettings() {
           )}
         </div>
       </form>
+
+      {/* Platform Features */}
+      <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E4E2DC', padding: '24px' }}>
+        <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 16, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 4 }}>
+          Platform Features
+        </p>
+        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#64748B', marginBottom: 18 }}>
+          Enable or disable modules · changes apply immediately · refresh resets
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {FEATURE_KEYS.map((key: FeatureKey) => (
+            <label
+              key={key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid #E4E2DC',
+                background: features[key] ? '#FAFAF8' : '#F8FAFC',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={features[key]}
+                onChange={e => setFeature(key, e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: branding.primaryColor, cursor: 'pointer' }}
+              />
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: '#0F172A' }}>
+                {FEATURE_LABELS[key]}
+              </span>
+              <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: 10, color: features[key] ? '#16A34A' : '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {features[key] ? 'Enabled' : 'Off'}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
 
       <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E4E2DC', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`, flexShrink: 0 }} />

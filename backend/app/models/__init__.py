@@ -7,6 +7,7 @@ from app.models.entities import (
     Permission,
     Policy,
     Product,
+    RefreshToken,
     Role,
     User,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "User",
     "Role",
     "Permission",
+    "RefreshToken",
     "Integration",
     "CompanyBranding",
     "FeatureFlags",

@@ -3,6 +3,8 @@ import NavBar from './components/NavBar'
 import Footer from './components/Footer'
 import { useFeatures } from './config/FeatureContext'
 import type { FeatureKey } from './config/features'
+import { useAuth } from './auth/AuthContext'
+import LoginPage from './auth/LoginPage'
 
 // Desktop / 00-Cover — "Start Here" guide (shown first on launch)
 import Cover from './desktop/00-Cover'
@@ -48,6 +50,7 @@ export default function App() {
   const [mobile, setMobile] = useState(false)
   const [mobileScreen, setMobileScreen] = useState<MobileScreen>('onboarding')
   const { isEnabled } = useFeatures()
+  const { isAuthenticated, isApiAuth, isReady } = useAuth()
 
   const navigate = (p: Page) => {
     const feature = pageFeature[p]
@@ -71,9 +74,23 @@ export default function App() {
     ? mobileScreen
     : (visibleMobileScreens[0]?.id ?? 'onboarding')
 
+  const exitAdmin = () => {
+    setAdmin(false)
+  }
+
   // ── Admin mode — full-screen, no nav/footer
   if (admin) {
-    return <AdminDashboard onExit={() => setAdmin(false)} />
+    if (isApiAuth && !isReady) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F3EF', fontFamily: 'var(--font-body)', color: '#64748B' }}>
+          Restoring session…
+        </div>
+      )
+    }
+    if (isApiAuth && !isAuthenticated) {
+      return <LoginPage onCancel={() => setAdmin(false)} />
+    }
+    return <AdminDashboard onExit={exitAdmin} />
   }
 
   // ── Mobile preview — full-screen, switcher only (mobile UI unmodified)
@@ -89,7 +106,7 @@ export default function App() {
             </button>
           ))}
           <button onClick={() => setMobile(false)}
-            style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}>
+            style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}>
             Exit Mobile
           </button>
         </div>

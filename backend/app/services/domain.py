@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
+from app.core.security import hash_password
 from app.models.entities import (
     Claim,
     CompanyBranding,
@@ -301,12 +303,13 @@ class UserService:
         role = self.roles.get_by_id(data.role_id)
         if not role:
             raise HTTPException(status_code=400, detail="Invalid roleId")
+        password = data.password or get_settings().DEMO_USER_PASSWORD
         entity = User(
             id=self.repo.new_id(),
             employee_id=data.employee_id,
             first_name=data.first_name,
             last_name=data.last_name,
-            email=data.email,
+            email=data.email.strip().lower(),
             phone=data.phone,
             department=data.department,
             role_id=data.role_id,
@@ -314,6 +317,7 @@ class UserService:
             branch=data.branch,
             status=data.status,
             last_login=data.last_login,
+            password_hash=hash_password(password),
         )
         return user_to_dict(self.repo.add(entity))
 
@@ -327,6 +331,11 @@ class UserService:
             if not role:
                 raise HTTPException(status_code=400, detail="Invalid roleId")
             payload["role_name"] = role.name
+        if "email" in payload and payload["email"]:
+            payload["email"] = str(payload["email"]).strip().lower()
+        password = payload.pop("password", None)
+        if password:
+            entity.password_hash = hash_password(password)
         for field, value in payload.items():
             setattr(entity, field, value)
         return user_to_dict(self.repo.save(entity))

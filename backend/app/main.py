@@ -27,7 +27,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.API_VERSION,
-        description="InsurtechKit production API — mirrors frontend modules. Auth lands in Phase 6.",
+        description="InsurtechKit production API — JWT auth, RBAC permissions, domain CRUD.",
         lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",

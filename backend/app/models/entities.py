@@ -118,8 +118,20 @@ class User(StringIdMixin, TimestampMixin, Base):
     branch: Mapped[str] = mapped_column(String(128), default="", nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="active", nullable=False)
     last_login: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), default="", nullable=False)
 
     role: Mapped["Role"] = relationship(back_populates="users")
+
+
+class RefreshToken(StringIdMixin, TimestampMixin, Base):
+    """Persisted refresh tokens for logout / rotation."""
+
+    __tablename__ = "refresh_tokens"
+
+    user_id: Mapped[str] = mapped_column(String(64), ForeignKey("users.id"), nullable=False, index=True)
+    jti: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class Integration(StringIdMixin, TimestampMixin, Base):

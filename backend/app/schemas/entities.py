@@ -237,7 +237,7 @@ class UserBase(APIModel):
 
 
 class UserCreate(UserBase):
-    pass
+    password: str | None = None
 
 
 class UserUpdate(APIModel):
@@ -252,6 +252,7 @@ class UserUpdate(APIModel):
     branch: str | None = None
     status: str | None = None
     last_login: str | None = None
+    password: str | None = None
 
 
 class UserRead(UserBase):

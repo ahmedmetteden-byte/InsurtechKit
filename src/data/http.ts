@@ -1,7 +1,9 @@
 /**
  * Minimal fetch helper for Api* services.
+ * Attaches Bearer tokens and triggers session expiry handlers on 401.
  */
 import { API_BASE_URL } from './config'
+import { getAccessToken } from '../auth/tokenStorage'
 
 export class ApiError extends Error {
   status: number
@@ -14,13 +16,44 @@ export class ApiError extends Error {
   }
 }
 
+type UnauthorizedListener = () => void
+const unauthorizedListeners = new Set<UnauthorizedListener>()
+
+/** Subscribe to 401 responses (used by AuthContext for auto-logout). */
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.add(listener)
+  return () => unauthorizedListeners.delete(listener)
+}
+
+function notifyUnauthorized() {
+  unauthorizedListeners.forEach(fn => {
+    try {
+      fn()
+    } catch {
+      // ignore listener errors
+    }
+  })
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  }
+  const token = getAccessToken()
+  // Auth bootstrap endpoints must not send a stale Bearer header
+  const isAuthBootstrap =
+    path.startsWith('/auth/login') ||
+    path.startsWith('/auth/refresh') ||
+    path.startsWith('/auth/forgot-password') ||
+    path.startsWith('/auth/reset-password')
+  if (token && !isAuthBootstrap) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
+    headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   })
 
@@ -39,6 +72,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 
   if (!res.ok) {
+    if (res.status === 401 && !isAuthBootstrap) {
+      notifyUnauthorized()
+    }
     const message =
       typeof data === 'object' && data && 'error' in data
         ? String((data as { error?: { message?: string } }).error?.message ?? res.statusText)

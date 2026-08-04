@@ -7,7 +7,7 @@ FastAPI backend mirroring the React white-label modules.
 - FastAPI + Pydantic v2
 - SQLAlchemy 2.x + Alembic
 - PostgreSQL
-- JWT-ready (`app/core/security.py`) — auth enforced in Phase 6
+- JWT access + refresh tokens (`app/core/security.py`) with RBAC permissions
 
 ## Quick start
 
@@ -30,6 +30,28 @@ python scripts/smoke_api_sqlite.py
 
 Swagger: http://localhost:8000/docs  
 Health: http://localhost:8000/health
+
+## Auth
+
+| Endpoint | Notes |
+|---|---|
+| `POST /api/v1/auth/login` | Returns access + refresh tokens |
+| `POST /api/v1/auth/refresh` | Rotates refresh token |
+| `POST /api/v1/auth/logout` | Revokes refresh token |
+| `GET /api/v1/auth/me` | Current user + permissions |
+| `POST /api/v1/auth/change-password` | Authenticated |
+| `POST /api/v1/auth/forgot-password` | Placeholder |
+| `POST /api/v1/auth/reset-password` | Placeholder (501) |
+
+Demo users are seeded with password `Password123!` (override via `DEMO_USER_PASSWORD`).
+
+Example admin: `ada.okafor@insureng.com.ng`
+
+Protected domain routes require Bearer access tokens and permission codes such as `products.view`, `customers.edit`, `claims.approve`, `reports.view`, `settings.manage`.
+
+## Frontend
+
+Set `VITE_DATA_PROVIDER=api` and `VITE_API_BASE_URL=http://localhost:8000/api/v1`. Memory mode remains the default for local UI work without the API.
 
 ## API prefix
 

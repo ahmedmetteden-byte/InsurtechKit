@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { useBranding } from '../config/BrandingContext'
 import { useFeatures } from '../config/FeatureContext'
+import { useAuth } from '../auth/AuthContext'
 import type { FeatureKey } from '../config/features'
 import CompanySettings from '../settings/CompanySettings'
 import { ProductManagement } from '../modules/products'
@@ -81,7 +82,6 @@ function UsersIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="curre
 function IntegrationsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M7 3h6v4H7zM3 13h6v4H3zM11 13h6v4h-6z"/><path d="M10 7v3M6 13v-3h8v3"/></svg> }
 function SettingsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"/></svg> }
 function BellIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M10 2a6 6 0 00-6 6v3l-1 2h14l-1-2V8a6 6 0 00-6-6z"/><path d="M8.5 17a1.5 1.5 0 003 0"/></svg> }
-function ChevDownIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 14, height: 14 }}><path d="M5 8l5 5 5-5"/></svg> }
 function TrendUpIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><path d="M3 14l5-5 4 3 5-6"/><path d="M14 6h3v3"/></svg> }
 
 // â”€â”€ KPI Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -501,6 +501,13 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
   const [view, setView] = useState<AdminView>('overview')
   const { branding } = useBranding()
   const { isEnabled } = useFeatures()
+  const { user, logout, isApiAuth } = useAuth()
+
+  const displayName = user ? `${user.firstName} ${user.lastName}` : 'Staff User'
+  const displayRole = user?.roleName || 'User'
+  const initials = user
+    ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
+    : 'SU'
 
   const visibleNav = navItems.filter(item => {
     if (item.id === 'settings') return isEnabled('settings') || view === 'settings'
@@ -576,15 +583,37 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
             </div>
 
             {/* User */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.canvas, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.canvas }}>
               <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #1D4ED8, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 700, color: 'white' }}>KA</span>
+                <span style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 700, color: 'white' }}>{initials}</span>
               </div>
               <div>
-                <p style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.text, lineHeight: 1 }}>Kunle Adesanya</p>
-                <p style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 1 }}>Head of Claims</p>
+                <p style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.text, lineHeight: 1 }}>{displayName}</p>
+                <p style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 1 }}>{displayRole}</p>
               </div>
-              <div style={{ color: T.muted }}><ChevDownIcon /></div>
+              {isApiAuth && (
+                <button
+                  type="button"
+                  onClick={() => { void logout().then(onExit) }}
+                  title="Logout"
+                  style={{
+                    marginLeft: 4,
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    border: `1px solid ${T.border}`,
+                    background: 'white',
+                    fontFamily: T.mono,
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: T.muted,
+                    cursor: 'pointer',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Logout
+                </button>
+              )}
             </div>
           </div>
         </header>

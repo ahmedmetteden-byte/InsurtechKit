@@ -12,10 +12,12 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:5173"
     SECRET_KEY: str = "change-me-jwt-ready"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENVIRONMENT: str = "development"
     SEED_ON_STARTUP: bool = True
     PROJECT_NAME: str = "InsurtechKit API"
     API_VERSION: str = "0.1.0"
+    DEMO_USER_PASSWORD: str = "Password123!"
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+.git
+.cursor
+*.md
+.env
+.env.*
+!.env.example
+backend/.venv
+backend/**/__pycache__
+coverage
+.vite
+agent-transcripts

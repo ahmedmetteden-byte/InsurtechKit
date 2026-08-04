@@ -1,12 +1,13 @@
 {
   "name": "insurtech-template",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke:api": "cd backend && python scripts/smoke_api_sqlite.py"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

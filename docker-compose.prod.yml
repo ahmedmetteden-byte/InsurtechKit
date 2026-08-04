@@ -1,0 +1,23 @@
+# Production overlay — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Requires SECRET_KEY (>=32 chars, not a demo default) and a non-demo DEMO_USER_PASSWORD.
+
+services:
+  api:
+    environment:
+      ENVIRONMENT: production
+      SEED_ON_STARTUP: "false"
+      ENABLE_DOCS: ${ENABLE_DOCS:-false}
+      RUN_MIGRATIONS_ON_STARTUP: ${RUN_MIGRATIONS_ON_STARTUP:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SECRET_KEY: ${SECRET_KEY}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD}
+
+  web:
+    build:
+      args:
+        VITE_DATA_PROVIDER: api
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    ports:
+      - "${WEB_PORT:-80}:80"

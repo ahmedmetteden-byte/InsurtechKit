@@ -1,0 +1,74 @@
+# InsurtechKit — full stack (PostgreSQL + FastAPI + Vite SPA)
+# Usage:
+#   docker compose up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+name: insurtechkit
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: insurtech-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-insurtech}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-insurtech}
+      POSTGRES_DB: ${POSTGRES_DB:-insurtech}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - insurtech_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-insurtech} -d ${POSTGRES_DB:-insurtech}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: insurtech-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://insurtech:insurtech@db:5432/insurtech}
+      API_PREFIX: ${API_PREFIX:-/api/v1}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080,http://localhost}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-jwt-ready}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-Password123!}
+      ENABLE_DOCS: ${ENABLE_DOCS:-true}
+      RUN_MIGRATIONS_ON_STARTUP: ${RUN_MIGRATIONS_ON_STARTUP:-true}
+      GRACEFUL_SHUTDOWN_SECONDS: ${GRACEFUL_SHUTDOWN_SECONDS:-30}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_DATA_PROVIDER: ${VITE_DATA_PROVIDER:-api}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    container_name: insurtech-web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    restart: unless-stopped
+
+volumes:
+  insurtech_pgdata:

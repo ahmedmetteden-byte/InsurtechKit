@@ -1,58 +1,41 @@
 # InsurtechKit API
 
-FastAPI backend mirroring the React white-label modules.
+FastAPI backend for the InsurtechKit white-label portal.
 
-## Stack
-
-- FastAPI + Pydantic v2
-- SQLAlchemy 2.x + Alembic
-- PostgreSQL
-- JWT access + refresh tokens (`app/core/security.py`) with RBAC permissions
+**Version:** 1.0.0
 
 ## Quick start
 
 ```bash
+# From repo root — full stack
+docker compose up -d --build
+
+# Or API + local Postgres only
 cd backend
 docker compose up -d
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 alembic upgrade head
-# optional fallback if alembic is blocked: python scripts/bootstrap_db.py
 uvicorn app.main:app --reload --port 8000
 ```
 
-Offline API smoke (SQLite, no Docker):
+Smoke (SQLite, no Docker):
 
 ```bash
 python scripts/smoke_api_sqlite.py
 ```
 
-Swagger: http://localhost:8000/docs  
-Health: http://localhost:8000/health
+- Swagger: http://localhost:8000/docs  
+- Health: http://localhost:8000/health  
+- Ready: http://localhost:8000/ready  
 
 ## Auth
 
-| Endpoint | Notes |
-|---|---|
-| `POST /api/v1/auth/login` | Returns access + refresh tokens |
-| `POST /api/v1/auth/refresh` | Rotates refresh token |
-| `POST /api/v1/auth/logout` | Revokes refresh token |
-| `GET /api/v1/auth/me` | Current user + permissions |
-| `POST /api/v1/auth/change-password` | Authenticated |
-| `POST /api/v1/auth/forgot-password` | Placeholder |
-| `POST /api/v1/auth/reset-password` | Placeholder (501) |
+See root [API_GUIDE.md](../API_GUIDE.md) and [SECURITY.md](../SECURITY.md).
 
-Demo users are seeded with password `Password123!` (override via `DEMO_USER_PASSWORD`).
+Demo admin: `ada.okafor@insureng.com.ng` / `Password123!` (development seed only).
 
-Example admin: `ada.okafor@insureng.com.ng`
+## Production
 
-Protected domain routes require Bearer access tokens and permission codes such as `products.view`, `customers.edit`, `claims.approve`, `reports.view`, `settings.manage`.
-
-## Frontend
-
-Set `VITE_DATA_PROVIDER=api` and `VITE_API_BASE_URL=http://localhost:8000/api/v1`. Memory mode remains the default for local UI work without the API.
-
-## API prefix
-
-`/api/v1`
+`ENVIRONMENT=production` enforces strong `SECRET_KEY`, disables seed-on-startup, and rejects the demo password default. Prefer the root Compose production overlay.

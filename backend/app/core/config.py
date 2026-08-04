@@ -1,7 +1,15 @@
-"""Application settings — JWT fields are ready for Phase 6 auth."""
+"""Application settings with production configuration validation."""
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+INSECURE_SECRET_KEYS = {
+    "change-me-jwt-ready",
+    "change-me-in-production-jwt-ready",
+    "changeme",
+    "secret",
+}
 
 
 class Settings(BaseSettings):
@@ -16,12 +24,37 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     SEED_ON_STARTUP: bool = True
     PROJECT_NAME: str = "InsurtechKit API"
-    API_VERSION: str = "0.1.0"
+    API_VERSION: str = "1.0.0"
     DEMO_USER_PASSWORD: str = "Password123!"
+    ENABLE_DOCS: bool = True
+    RUN_MIGRATIONS_ON_STARTUP: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT.strip().lower() in {"production", "prod"}
+
+    @model_validator(mode="after")
+    def validate_production_safety(self) -> "Settings":
+        if not self.is_production:
+            return self
+        errors: list[str] = []
+        if self.SECRET_KEY.strip() in INSECURE_SECRET_KEYS or len(self.SECRET_KEY.strip()) < 32:
+            errors.append(
+                "SECRET_KEY must be a strong unique value (min 32 chars) when ENVIRONMENT=production"
+            )
+        if self.SEED_ON_STARTUP:
+            errors.append("SEED_ON_STARTUP must be false when ENVIRONMENT=production")
+        if self.DEMO_USER_PASSWORD == "Password123!":
+            errors.append(
+                "DEMO_USER_PASSWORD must be changed from the demo default when ENVIRONMENT=production"
+            )
+        if errors:
+            raise ValueError("; ".join(errors))
+        return self
 
 
 @lru_cache

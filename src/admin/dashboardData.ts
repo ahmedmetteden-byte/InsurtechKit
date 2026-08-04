@@ -9,6 +9,7 @@ import { PolicyService } from '../modules/policies/services/PolicyService'
 import { ProductService } from '../modules/products/services/ProductService'
 import { UserService } from '../modules/users/services/UserService'
 import { userDisplayName } from '../modules/users/types/User'
+import { IntegrationService } from '../modules/integrations/services/IntegrationService'
 
 export type NamedCount = { name: string; count: number }
 
@@ -50,11 +51,18 @@ export type DashboardMetrics = {
     byDepartment: NamedCount[]
     byRole: NamedCount[]
   }
+  integrations: {
+    total: number
+    configured: number
+    connected: number
+    pending: number
+    disabled: number
+  }
 }
 
 export type RecentActivityItem = {
   id: string
-  module: 'Product' | 'Customer' | 'Policy' | 'Claim' | 'User'
+  module: 'Product' | 'Customer' | 'Policy' | 'Claim' | 'User' | 'Integration'
   title: string
   subtitle: string
   createdAt: string
@@ -94,6 +102,7 @@ export function getDashboardMetrics(): DashboardMetrics {
   const policies = PolicyService.getAll()
   const claims = ClaimService.getAll()
   const users = UserService.getAll()
+  const integrations = IntegrationService.getAll()
 
   return {
     products: {
@@ -132,6 +141,13 @@ export function getDashboardMetrics(): DashboardMetrics {
       onlineToday: users.filter(u => isSameCalendarDay(u.lastLogin)).length,
       byDepartment: countBy(users.map(u => u.department)),
       byRole: countBy(users.map(u => u.roleName)),
+    },
+    integrations: {
+      total: integrations.length,
+      configured: integrations.filter(i => i.status === 'configured').length,
+      connected: integrations.filter(i => i.status === 'connected').length,
+      pending: integrations.filter(i => i.status === 'pending').length,
+      disabled: integrations.filter(i => i.status === 'disabled').length,
     },
   }
 }
@@ -177,7 +193,15 @@ export function getRecentActivity(limit = 10): RecentActivityItem[] {
     createdAt: u.createdAt,
   }))
 
-  return [...products, ...customers, ...policies, ...claims, ...users]
+  const integrations = IntegrationService.getAll().map(i => ({
+    id: `integration-${i.id}`,
+    module: 'Integration' as const,
+    title: i.name,
+    subtitle: `${i.provider} · ${i.type}`,
+    createdAt: i.createdAt,
+  }))
+
+  return [...products, ...customers, ...policies, ...claims, ...users, ...integrations]
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0))
     .slice(0, limit)
 }
@@ -209,6 +233,11 @@ export function getModuleHealth(): ModuleHealth[] {
       module: 'Users',
       status: m.users.total > 0 ? 'Healthy' : 'Empty',
       detail: `${m.users.total} in register`,
+    },
+    {
+      module: 'Integrations',
+      status: m.integrations.total > 0 ? 'Healthy' : 'Empty',
+      detail: `${m.integrations.connected} connected · ${m.integrations.total} total`,
     },
   ]
 }
@@ -274,6 +303,10 @@ export function getWeeklyCreateActivity(): { day: string; new: number; resolved:
   for (const u of UserService.getAll()) {
     stamp(u.createdAt, created)
     if (u.status === 'active') stamp(u.updatedAt || u.createdAt, activeLike)
+  }
+  for (const i of IntegrationService.getAll()) {
+    stamp(i.createdAt, created)
+    if (i.status === 'connected') stamp(i.updatedAt || i.createdAt, activeLike)
   }
 
   // Reorder Mon→Sun to match existing chart labels

@@ -9,6 +9,7 @@ import type { FeatureKey } from '../config/features'
 import CompanySettings from '../settings/CompanySettings'
 import { ProductManagement } from '../modules/products'
 import { CustomerManagement } from '../modules/customers'
+import { PolicyManagement } from '../modules/policies'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -639,7 +640,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
           {activeView === 'overview' && (isEnabled('dashboard') || isEnabled('analytics')) && <OverviewSection />}
           {activeView === 'claims' && isEnabled('claims') && <ClaimsSection />}
           {activeView === 'policyholders' && isEnabled('customers') && <CustomerManagement />}
-          {activeView === 'premiums' && isEnabled('policies') && <PlaceholderSection title="Premium Revenue" />}
+          {activeView === 'premiums' && isEnabled('policies') && <PolicyManagement />}
           {activeView === 'products' && isEnabled('products') && <ProductManagement />}
           {activeView === 'reports' && isEnabled('reports') && <PlaceholderSection title="Reports & Analytics" />}
           {activeView === 'settings' && <CompanySettings />}

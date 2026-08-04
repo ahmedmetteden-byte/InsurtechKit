@@ -4,7 +4,7 @@
  */
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { Button, Stack } from '../../../components/ui'
-import { PolicyService } from '../../policies/services/PolicyService'
+import { PolicyService } from '../../../data/services'
 import type { Claim, ClaimStatus, CreateClaimInput } from '../types/Claim'
 import { claimStatusLabel } from '../types/Claim'
 

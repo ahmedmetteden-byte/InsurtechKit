@@ -12,6 +12,7 @@ export type {
 } from './types/Product'
 
 export { defaultProducts } from './config/defaultProducts'
-export { ProductService } from './services/ProductService'
+export { ProductService } from '../../data/services'
+export { ApiProductService } from './services/ApiProductService'
 export { default as ProductForm } from './components/ProductForm'
 export { default as ProductManagement } from './pages/ProductManagement'

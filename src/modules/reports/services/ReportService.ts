@@ -7,12 +7,14 @@ import {
   getDashboardMetrics,
   getPremiumTrendFromPolicies,
 } from '../../../admin/dashboardData'
-import { ClaimService } from '../../claims/services/ClaimService'
 import { claimStatusLabel } from '../../claims/types/Claim'
-import { CustomerService } from '../../customers/services/CustomerService'
 import { customerDisplayName } from '../../customers/types/Customer'
-import { PolicyService } from '../../policies/services/PolicyService'
-import { ProductService } from '../../products/services/ProductService'
+import {
+  ClaimService,
+  CustomerService,
+  PolicyService,
+  ProductService,
+} from '../../../data/services'
 import { colorAt } from '../config/chartColors'
 import type {
   ChartSlice,

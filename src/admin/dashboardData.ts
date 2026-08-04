@@ -2,14 +2,16 @@
  * Live dashboard aggregations from Product / Customer / Policy / Claim / User services.
  * No duplicated stores — always reads current in-memory service state.
  */
-import { ClaimService } from '../modules/claims/services/ClaimService'
-import { CustomerService } from '../modules/customers/services/CustomerService'
+import {
+  ClaimService,
+  CustomerService,
+  IntegrationService,
+  PolicyService,
+  ProductService,
+  UserService,
+} from '../data/services'
 import { customerDisplayName } from '../modules/customers/types/Customer'
-import { PolicyService } from '../modules/policies/services/PolicyService'
-import { ProductService } from '../modules/products/services/ProductService'
-import { UserService } from '../modules/users/services/UserService'
 import { userDisplayName } from '../modules/users/types/User'
-import { IntegrationService } from '../modules/integrations/services/IntegrationService'
 
 export type NamedCount = { name: string; count: number }
 

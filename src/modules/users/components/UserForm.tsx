@@ -4,7 +4,7 @@
  */
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { Button, Stack } from '../../../components/ui'
-import { UserService } from '../services/UserService'
+import { UserService } from '../../../data/services'
 import type { CreateUserInput, User, UserStatus } from '../types/User'
 
 export const USER_STATUSES: UserStatus[] = ['active', 'inactive', 'suspended']

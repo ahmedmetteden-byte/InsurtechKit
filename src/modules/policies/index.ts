@@ -11,6 +11,7 @@ export type {
 } from './types/Policy'
 
 export { defaultPolicies } from './config/defaultPolicies'
-export { PolicyService } from './services/PolicyService'
+export { PolicyService } from '../../data/services'
+export { ApiPolicyService } from './services/ApiPolicyService'
 export { default as PolicyForm } from './components/PolicyForm'
 export { default as PolicyManagement } from './pages/PolicyManagement'

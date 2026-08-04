@@ -12,6 +12,7 @@ export type {
 
 export { claimStatusLabel } from './types/Claim'
 export { defaultClaims } from './config/defaultClaims'
-export { ClaimService } from './services/ClaimService'
+export { ClaimService } from '../../data/services'
+export { ApiClaimService } from './services/ApiClaimService'
 export { default as ClaimForm } from './components/ClaimForm'
 export { default as ClaimManagement } from './pages/ClaimManagement'

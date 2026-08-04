@@ -17,8 +17,15 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*
+!.env.example
+!backend/.env.example
 
-# IDE
+# Python backend
+backend/.venv/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/.mypy_cache/
 .vscode/
 .idea/
 

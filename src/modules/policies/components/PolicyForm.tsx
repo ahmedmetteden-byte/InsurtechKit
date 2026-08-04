@@ -4,9 +4,8 @@
  */
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { Button, Stack } from '../../../components/ui'
-import { CustomerService } from '../../customers/services/CustomerService'
+import { CustomerService, ProductService } from '../../../data/services'
 import { customerDisplayName } from '../../customers/types/Customer'
-import { ProductService } from '../../products/services/ProductService'
 import type { CreatePolicyInput, Policy, PolicyStatus } from '../types/Policy'
 
 export const POLICY_STATUSES: PolicyStatus[] = ['active', 'pending', 'expired', 'cancelled']

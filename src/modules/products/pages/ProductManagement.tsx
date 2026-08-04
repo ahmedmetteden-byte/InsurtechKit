@@ -3,7 +3,7 @@
  */
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
-import { ProductService } from '../services/ProductService'
+import { ProductService } from '../../../data/services'
 import type { Product } from '../types/Product'
 import ProductForm, { CATEGORIES, type ProductFormValues } from '../components/ProductForm'
 
@@ -161,22 +161,22 @@ export default function ProductManagement() {
     setSelectedId(null)
   }
 
-  const handleCreate = (values: ProductFormValues) => {
-    ProductService.create(values)
+  const handleCreate = async (values: ProductFormValues) => {
+    await Promise.resolve(ProductService.create(values))
     refresh()
     close()
   }
 
-  const handleUpdate = (values: ProductFormValues) => {
+  const handleUpdate = async (values: ProductFormValues) => {
     if (!selectedId) return
-    ProductService.update({ id: selectedId, ...values })
+    await Promise.resolve(ProductService.update({ id: selectedId, ...values }))
     refresh()
     close()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedId) return
-    ProductService.delete(selectedId)
+    await Promise.resolve(ProductService.delete(selectedId))
     refresh()
     close()
   }

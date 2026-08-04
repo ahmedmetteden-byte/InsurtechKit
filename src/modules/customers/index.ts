@@ -15,6 +15,7 @@ export type {
 
 export { customerDisplayName } from './types/Customer'
 export { defaultCustomers } from './config/defaultCustomers'
-export { CustomerService } from './services/CustomerService'
+export { CustomerService } from '../../data/services'
+export { ApiCustomerService } from './services/ApiCustomerService'
 export { default as CustomerForm } from './components/CustomerForm'
 export { default as CustomerManagement } from './pages/CustomerManagement'

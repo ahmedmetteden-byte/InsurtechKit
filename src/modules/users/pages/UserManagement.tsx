@@ -3,7 +3,7 @@
  */
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
-import { UserService } from '../services/UserService'
+import { UserService } from '../../../data/services'
 import type { User, UserStatus } from '../types/User'
 import { userDisplayName } from '../types/User'
 import UserForm, { DEPARTMENTS, USER_STATUSES, type UserFormValues } from '../components/UserForm'
@@ -213,22 +213,22 @@ export default function UserManagement() {
     setSelectedId(null)
   }
 
-  const handleCreate = (values: UserFormValues) => {
-    UserService.create(values)
+  const handleCreate = async (values: UserFormValues) => {
+    await Promise.resolve(UserService.create(values))
     refresh()
     close()
   }
 
-  const handleUpdate = (values: UserFormValues) => {
+  const handleUpdate = async (values: UserFormValues) => {
     if (!selectedId) return
-    UserService.update({ id: selectedId, ...values })
+    await Promise.resolve(UserService.update({ id: selectedId, ...values }))
     refresh()
     close()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedId) return
-    UserService.delete(selectedId)
+    await Promise.resolve(UserService.delete(selectedId))
     refresh()
     close()
   }

@@ -3,7 +3,7 @@
  */
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
-import { IntegrationService } from '../services/IntegrationService'
+import { IntegrationService } from '../../../data/services'
 import type { Integration, IntegrationStatus, IntegrationType } from '../types/Integration'
 import {
   INTEGRATION_STATUSES,
@@ -227,29 +227,29 @@ export default function IntegrationManagement() {
     setTestMessage(null)
   }
 
-  const handleCreate = (values: IntegrationFormValues) => {
-    IntegrationService.create(values)
+  const handleCreate = async (values: IntegrationFormValues) => {
+    await Promise.resolve(IntegrationService.create(values))
     refresh()
     close()
   }
 
-  const handleUpdate = (values: IntegrationFormValues) => {
+  const handleUpdate = async (values: IntegrationFormValues) => {
     if (!selectedId) return
-    IntegrationService.update({ id: selectedId, ...values })
+    await Promise.resolve(IntegrationService.update({ id: selectedId, ...values }))
     refresh()
     close()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedId) return
-    IntegrationService.delete(selectedId)
+    await Promise.resolve(IntegrationService.delete(selectedId))
     refresh()
     close()
   }
 
-  const handleTest = () => {
+  const handleTest = async () => {
     if (!selectedId) return
-    const result = IntegrationService.testConnection(selectedId)
+    const result = await Promise.resolve(IntegrationService.testConnection(selectedId))
     setTestMessage(result.message)
     refresh()
   }

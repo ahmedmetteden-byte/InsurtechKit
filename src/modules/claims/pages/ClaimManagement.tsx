@@ -3,7 +3,7 @@
  */
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
-import { ClaimService } from '../services/ClaimService'
+import { ClaimService } from '../../../data/services'
 import type { Claim, ClaimStatus } from '../types/Claim'
 import { claimStatusLabel } from '../types/Claim'
 import ClaimForm, { CLAIM_STATUSES, type ClaimFormValues } from '../components/ClaimForm'
@@ -207,22 +207,22 @@ export default function ClaimManagement() {
     setSelectedId(null)
   }
 
-  const handleCreate = (values: ClaimFormValues) => {
-    ClaimService.create(values)
+  const handleCreate = async (values: ClaimFormValues) => {
+    await Promise.resolve(ClaimService.create(values))
     refresh()
     close()
   }
 
-  const handleUpdate = (values: ClaimFormValues) => {
+  const handleUpdate = async (values: ClaimFormValues) => {
     if (!selectedId) return
-    ClaimService.update({ id: selectedId, ...values })
+    await Promise.resolve(ClaimService.update({ id: selectedId, ...values }))
     refresh()
     close()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedId) return
-    ClaimService.delete(selectedId)
+    await Promise.resolve(ClaimService.delete(selectedId))
     refresh()
     close()
   }

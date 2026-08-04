@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: insurtech-postgres
+    environment:
+      POSTGRES_USER: insurtech
+      POSTGRES_PASSWORD: insurtech
+      POSTGRES_DB: insurtech
+    ports:
+      - "5432:5432"
+    volumes:
+      - insurtech_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U insurtech -d insurtech"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  insurtech_pgdata:

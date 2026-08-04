@@ -3,7 +3,7 @@
  */
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
-import { CustomerService } from '../services/CustomerService'
+import { CustomerService } from '../../../data/services'
 import { customerDisplayName, type Customer, type CustomerStatus, type CustomerType } from '../types/Customer'
 import CustomerForm, {
   CUSTOMER_STATUSES,
@@ -192,22 +192,22 @@ export default function CustomerManagement() {
     setSelectedId(null)
   }
 
-  const handleCreate = (values: CustomerFormValues) => {
-    CustomerService.create(values)
+  const handleCreate = async (values: CustomerFormValues) => {
+    await Promise.resolve(CustomerService.create(values))
     refresh()
     close()
   }
 
-  const handleUpdate = (values: CustomerFormValues) => {
+  const handleUpdate = async (values: CustomerFormValues) => {
     if (!selectedId) return
-    CustomerService.update({ id: selectedId, ...values })
+    await Promise.resolve(CustomerService.update({ id: selectedId, ...values }))
     refresh()
     close()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedId) return
-    CustomerService.delete(selectedId)
+    await Promise.resolve(CustomerService.delete(selectedId))
     refresh()
     close()
   }

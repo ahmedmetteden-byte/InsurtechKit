@@ -3,8 +3,7 @@
  */
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
-import { ProductService } from '../../products/services/ProductService'
-import { PolicyService } from '../services/PolicyService'
+import { ProductService, PolicyService } from '../../../data/services'
 import type { Policy, PolicyStatus } from '../types/Policy'
 import PolicyForm, { POLICY_STATUSES, type PolicyFormValues } from '../components/PolicyForm'
 
@@ -201,22 +200,22 @@ export default function PolicyManagement() {
     setSelectedId(null)
   }
 
-  const handleCreate = (values: PolicyFormValues) => {
-    PolicyService.create(values)
+  const handleCreate = async (values: PolicyFormValues) => {
+    await Promise.resolve(PolicyService.create(values))
     refresh()
     close()
   }
 
-  const handleUpdate = (values: PolicyFormValues) => {
+  const handleUpdate = async (values: PolicyFormValues) => {
     if (!selectedId) return
-    PolicyService.update({ id: selectedId, ...values })
+    await Promise.resolve(PolicyService.update({ id: selectedId, ...values }))
     refresh()
     close()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedId) return
-    PolicyService.delete(selectedId)
+    await Promise.resolve(PolicyService.delete(selectedId))
     refresh()
     close()
   }

@@ -17,6 +17,7 @@ export type {
 export { userDisplayName } from './types/User'
 export { defaultRoles, getRoleById } from './config/defaultRoles'
 export { defaultUsers } from './config/defaultUsers'
-export { UserService } from './services/UserService'
+export { UserService } from '../../data/services'
+export { ApiUserService } from './services/ApiUserService'
 export { default as UserForm } from './components/UserForm'
 export { default as UserManagement } from './pages/UserManagement'

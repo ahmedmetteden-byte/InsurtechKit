@@ -19,6 +19,7 @@ export {
 
 export { defaultIntegrations } from './config/defaultIntegrations'
 export { PROVIDERS_BY_TYPE, providersForType } from './config/providers'
-export { IntegrationService } from './services/IntegrationService'
+export { IntegrationService } from '../../data/services'
+export { ApiIntegrationService } from './services/ApiIntegrationService'
 export { default as IntegrationForm } from './components/IntegrationForm'
 export { default as IntegrationManagement } from './pages/IntegrationManagement'

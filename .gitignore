@@ -21,6 +21,7 @@ pnpm-debug.log*
 !backend/.env.example
 
 # Python backend
+.venv/
 backend/.venv/
 backend/**/__pycache__/
 backend/**/*.pyc

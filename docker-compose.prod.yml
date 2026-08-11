@@ -6,8 +6,11 @@
 services:
   api:
     environment:
-      ENVIRONMENT: production
-      SEED_ON_STARTUP: "false"
+      # Defaults are production-safe. Demo Edition overrides via --env-file
+      # (ENVIRONMENT=demonstration, SEED_ON_STARTUP=true). Hardcoding these
+      # would ignore install-time config/environment.env values.
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP:-false}
       ENABLE_DOCS: ${ENABLE_DOCS:-false}
       RUN_MIGRATIONS_ON_STARTUP: ${RUN_MIGRATIONS_ON_STARTUP:-true}
       CORS_ORIGINS: ${CORS_ORIGINS}

@@ -1,5 +1,8 @@
 import { ProductService as MemoryProductService } from '../../products/services/ProductService'
 import { CustomerService as MemoryCustomerService } from '../../customers/services/CustomerService'
+import { PolicyService as MemoryPolicyService } from '../../policies/services/PolicyService'
+import { ClaimService as MemoryClaimService } from '../../claims/services/ClaimService'
+import type { Claim } from '../../claims'
 import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
 import { saveBlob } from '../../../data/http'
 import type {
@@ -11,7 +14,9 @@ import type {
   OnboardingStatus,
   PayInvoiceInput,
   Payment,
+  PublicClaim,
   StaffUpdatePaymentInput,
+  SubmitClaimInput,
   SubmitOnboardingApplicationInput,
   UpdateOnboardingApplicationInput,
   UploadOnboardingDocumentInput,
@@ -34,6 +39,14 @@ function newPaymentReference(): string {
 
 function newReceiptNumber(): string {
   return `RCT-${crypto.randomUUID().split('-')[0].toUpperCase()}`
+}
+
+function newPolicyNumber(): string {
+  return `POL-${crypto.randomUUID().split('-')[0].toUpperCase()}`
+}
+
+function newClaimNumber(): string {
+  return `CLM-${crypto.randomUUID().split('-')[0].toUpperCase()}`
 }
 
 /** Memory-only wrapper — keeps the real File so "download" works without a backend. */
@@ -83,6 +96,10 @@ const NOTIFICATION_TEMPLATES: Record<string, (ctx: Record<string, string>) => [s
   payment_refunded: ctx => [
     `Refund processed — ${ctx.reference}`,
     `Hi ${ctx.firstName}, your payment for application ${ctx.reference} has been refunded.`,
+  ],
+  claim_submitted: ctx => [
+    `Claim received — ${ctx.claimNumber}`,
+    `Hi ${ctx.firstName}, we've received your claim ${ctx.claimNumber}. Our claims team will review it shortly.`,
   ],
 }
 
@@ -134,6 +151,31 @@ function convertToCustomer(application: OnboardingApplication): string {
   return customer.id
 }
 
+/** A paid invoice issues a real policy record. */
+function issuePolicy(application: OnboardingApplication, payment: Payment): string {
+  const product = MemoryProductService.getById(application.productId)
+  const today = new Date()
+  const expiry = new Date(today)
+  expiry.setFullYear(expiry.getFullYear() + 1)
+  const policy = MemoryPolicyService.create({
+    policyNumber: newPolicyNumber(),
+    customerId: application.customerId,
+    productId: application.productId,
+    customerName: `${application.applicantFirstName} ${application.applicantLastName}`,
+    productName: application.productName,
+    policyType: product?.category ?? '',
+    effectiveDate: today.toISOString().slice(0, 10),
+    expiryDate: expiry.toISOString().slice(0, 10),
+    premium: payment.amount,
+    sumInsured: 0,
+    currency: payment.currency,
+    status: 'active',
+    agent: '',
+    branch: '',
+  })
+  return policy.id
+}
+
 /**
  * In-memory Onboarding service.
  * Swap the store implementation later for FastAPI HTTP calls without changing callers.
@@ -160,6 +202,31 @@ class OnboardingServiceImpl {
     return this.payments
       .filter(p => p.applicationId === applicationId)
       .map(({ applicationId: _applicationId, ...payment }) => payment)
+  }
+
+  private policyNumberFor(policyId: string): string {
+    if (!policyId) return ''
+    return MemoryPolicyService.getById(policyId)?.policyNumber ?? ''
+  }
+
+  private claimsFor(policyId: string): Claim[] {
+    if (!policyId) return []
+    return MemoryClaimService.getAll().filter(c => c.policyId === policyId)
+  }
+
+  private publicClaimsFor(policyId: string): PublicClaim[] {
+    return this.claimsFor(policyId).map(c => ({
+      id: c.id,
+      claimNumber: c.claimNumber,
+      status: c.status,
+      incidentDate: c.incidentDate,
+      reportedDate: c.reportedDate,
+      claimAmount: c.claimAmount,
+      approvedAmount: c.approvedAmount,
+      currency: c.currency,
+      description: c.description,
+      createdAt: c.createdAt,
+    }))
   }
 
   private notify(templateKey: string, application: OnboardingApplication, extra?: Record<string, string>): void {
@@ -196,9 +263,11 @@ class OnboardingServiceImpl {
   private withRelated(application: OnboardingApplication): OnboardingApplication {
     return {
       ...application,
+      policyNumber: this.policyNumberFor(application.policyId),
       documents: this.documentsFor(application.id),
       notifications: this.notificationsFor(application.id),
       payments: this.paymentsFor(application.id),
+      claims: this.claimsFor(application.policyId),
     }
   }
 
@@ -226,8 +295,10 @@ class OnboardingServiceImpl {
       applicantLastName: application.applicantLastName,
       status: application.status,
       createdAt: application.createdAt,
+      policyNumber: this.policyNumberFor(application.policyId),
       documents: this.documentsFor(application.id),
       payments: this.paymentsFor(application.id),
+      claims: this.publicClaimsFor(application.policyId),
     }
   }
 
@@ -294,9 +365,12 @@ class OnboardingServiceImpl {
       status: 'submitted',
       reviewNotes: '',
       customerId: '',
+      policyId: '',
+      policyNumber: '',
       documents: [],
       notifications: [],
       payments: [],
+      claims: [],
       createdAt: now,
       updatedAt: now,
     }
@@ -369,13 +443,28 @@ class OnboardingServiceImpl {
       updatedAt: now,
     }
     this.payments = [...this.payments.slice(0, index), updated, ...this.payments.slice(index + 1)]
-    this.notify('payment_received', application, {
-      amount: `${updated.currency} ${updated.amount.toLocaleString()}`,
-      receiptNumber: updated.receiptNumber,
-    })
-    emitMemoryDataChange()
     const { applicationId: _applicationId, ...result } = updated
+    this.handlePaymentSuccess(application, result)
+    emitMemoryDataChange()
     return result
+  }
+
+  private handlePaymentSuccess(application: OnboardingApplication, payment: Payment): void {
+    if (!application.policyId) {
+      const policyId = issuePolicy(application, payment)
+      const index = this.applications.findIndex(a => a.id === application.id)
+      if (index !== -1) {
+        this.applications = [
+          ...this.applications.slice(0, index),
+          { ...this.applications[index], policyId },
+          ...this.applications.slice(index + 1),
+        ]
+      }
+    }
+    this.notify('payment_received', application, {
+      amount: `${payment.currency} ${payment.amount.toLocaleString()}`,
+      receiptNumber: payment.receiptNumber,
+    })
   }
 
   /** Staff override — e.g. reconciling a bank transfer, or issuing a refund. */
@@ -403,12 +492,9 @@ class OnboardingServiceImpl {
         updatedAt: now,
       }
       this.payments = [...this.payments.slice(0, index), updated, ...this.payments.slice(index + 1)]
-      this.notify('payment_received', application, {
-        amount: `${updated.currency} ${updated.amount.toLocaleString()}`,
-        receiptNumber: updated.receiptNumber,
-      })
-      emitMemoryDataChange()
       const { applicationId: _applicationId, ...result } = updated
+      this.handlePaymentSuccess(application, result)
+      emitMemoryDataChange()
       return result
     }
 
@@ -423,6 +509,41 @@ class OnboardingServiceImpl {
     }
 
     throw new Error('Invalid payment status')
+  }
+
+  /** Public — files a claim against the policy issued for this application. */
+  submitClaim(input: SubmitClaimInput): Claim {
+    const application = this.applications.find(a => a.id === input.applicationId)
+    if (!application) {
+      throw new Error('Application not found')
+    }
+    if (!application.policyId) {
+      throw new Error('A claim can only be filed once your policy has been issued (after payment).')
+    }
+    const policy = MemoryPolicyService.getById(application.policyId)
+    if (!policy) {
+      throw new Error('Policy not found')
+    }
+    const claim = MemoryClaimService.create({
+      claimNumber: newClaimNumber(),
+      policyId: policy.id,
+      policyNumber: policy.policyNumber,
+      customerId: application.customerId,
+      customerName: `${application.applicantFirstName} ${application.applicantLastName}`,
+      productName: application.productName,
+      incidentDate: input.incidentDate,
+      reportedDate: new Date().toISOString().slice(0, 10),
+      claimAmount: input.claimAmount,
+      approvedAmount: 0,
+      currency: policy.currency,
+      description: input.description,
+      status: 'open',
+      assignedTo: '',
+      notes: '',
+    })
+    this.notify('claim_submitted', application, { claimNumber: claim.claimNumber })
+    emitMemoryDataChange()
+    return claim
   }
 
   /** Clear submissions (useful for demos / tests). */

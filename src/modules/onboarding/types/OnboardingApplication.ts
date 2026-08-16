@@ -1,6 +1,7 @@
 /**
  * Onboarding application domain model — shared by UI, services, and future FastAPI adapters.
  */
+import type { Claim, ClaimStatus } from '../../claims'
 
 export type OnboardingStatus =
   | 'submitted'
@@ -25,13 +26,39 @@ export interface OnboardingApplication {
   reviewNotes: string
   /** Set once the application is approved and converted into a Customer record. */
   customerId: string
+  /** Set once the invoice is paid and a policy is issued. */
+  policyId: string
+  policyNumber: string
   documents: OnboardingDocument[]
   /** Staff-only log of notifications sent to the applicant — not shown on the public tracking page. */
   notifications: OnboardingNotification[]
   /** Invoice(s) generated on approval — visible to both staff and the applicant. */
   payments: Payment[]
+  /** Claims filed against the issued policy. */
+  claims: Claim[]
   createdAt: string
   updatedAt: string
+}
+
+/** Public, trimmed claim view — omits staff-only fields (notes, assignedTo). */
+export interface PublicClaim {
+  id: string
+  claimNumber: string
+  status: ClaimStatus
+  incidentDate: string
+  reportedDate: string
+  claimAmount: number
+  approvedAmount: number
+  currency: string
+  description: string
+  createdAt: string
+}
+
+export interface SubmitClaimInput {
+  applicationId: string
+  incidentDate: string
+  description: string
+  claimAmount: number
 }
 
 export type PaymentMethod = 'paystack' | 'flutterwave' | 'bank_transfer' | 'other'
@@ -109,8 +136,10 @@ export interface OnboardingApplicationSummary {
   applicantLastName: string
   status: OnboardingStatus
   createdAt: string
+  policyNumber: string
   documents: OnboardingDocument[]
   payments: Payment[]
+  claims: PublicClaim[]
 }
 
 export interface LookupOnboardingApplicationInput {

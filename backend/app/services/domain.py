@@ -58,7 +58,7 @@ from app.schemas.entities import (
     UserCreate,
     UserUpdate,
 )
-from app.services.notifications import STATUS_TEMPLATE, deliver, render
+from app.services.notifications import CLAIM_STATUS_TEMPLATE, STATUS_TEMPLATE, deliver, render
 from app.services.storage import resolve_path, save_upload
 from app.utils.mappers import (
     branding_to_dict,
@@ -250,6 +250,8 @@ class ClaimService:
     def __init__(self, db: Session):
         self.repo = ClaimRepository(db)
         self.policies = PolicyRepository(db)
+        self.customers = CustomerRepository(db)
+        self.notifications = NotificationService(db)
 
     def list(self) -> list[dict]:
         return [claim_to_dict(c) for c in self.repo.get_all()]
@@ -289,9 +291,32 @@ class ClaimService:
         entity = self.repo.get_by_id(id)
         if not entity:
             raise HTTPException(status_code=404, detail="Claim not found")
+        previous_status = entity.status
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(entity, field, value)
-        return claim_to_dict(self.repo.save(entity))
+        saved = self.repo.save(entity)
+        if saved.status != previous_status:
+            self._notify_status_change(saved)
+        return claim_to_dict(saved)
+
+    def _notify_status_change(self, claim: Claim) -> None:
+        template_key = CLAIM_STATUS_TEMPLATE.get(claim.status)
+        if not template_key:
+            return
+        customer = self.customers.get_by_id(claim.customer_id)
+        if not customer or not customer.email:
+            return
+        self.notifications.send(
+            template_key,
+            customer.email,
+            {
+                "firstName": customer.first_name,
+                "claimNumber": claim.claim_number,
+                "approvedAmount": f"{claim.currency} {claim.approved_amount:,.2f}",
+            },
+            "claim",
+            claim.id,
+        )
 
     def delete(self, id: str) -> None:
         if not self.repo.delete(id):
@@ -409,11 +434,17 @@ class OnboardingService:
         self.documents = OnboardingDocumentRepository(db)
         self.notifications = NotificationService(db)
         self.payments = PaymentService(db)
+        self.policies = PolicyRepository(db)
+        self.claims_service = ClaimService(db)
         self.branding = BrandingRepository(db)
 
     def _company_name(self) -> str:
         branding = self.branding.get()
         return branding.company_name if branding else "our team"
+
+    def _policy_number(self, application: OnboardingApplication) -> str:
+        policy = self.policies.get_by_id(application.policy_id) if application.policy_id else None
+        return policy.policy_number if policy else ""
 
     def _notify(self, template_key: str, application: OnboardingApplication, extra: dict | None = None) -> None:
         context = {
@@ -429,11 +460,17 @@ class OnboardingService:
 
     def _to_dict(self, application: OnboardingApplication) -> dict:
         data = onboarding_application_to_dict(application)
+        data["policyNumber"] = self._policy_number(application)
         data["documents"] = [
             onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
         ]
         data["notifications"] = self.notifications.list_for("onboarding_application", application.id)
         data["payments"] = self.payments.list_for("onboarding_application", application.id)
+        data["claims"] = (
+            [claim_to_dict(c) for c in self.claims_service.repo.get_by_policy(application.policy_id)]
+            if application.policy_id
+            else []
+        )
         return data
 
     def list(self) -> list[dict]:
@@ -458,10 +495,30 @@ class OnboardingService:
             "applicantLastName": application.applicant_last_name,
             "status": application.status,
             "createdAt": to_iso(application.created_at),
+            "policyNumber": self._policy_number(application),
             "documents": [
                 onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
             ],
             "payments": self.payments.list_for("onboarding_application", application.id),
+            "claims": (
+                [self._public_claim_dict(c) for c in self.claims_service.repo.get_by_policy(application.policy_id)]
+                if application.policy_id
+                else []
+            ),
+        }
+
+    def _public_claim_dict(self, claim: Claim) -> dict:
+        return {
+            "id": claim.id,
+            "claimNumber": claim.claim_number,
+            "status": claim.status,
+            "incidentDate": claim.incident_date,
+            "reportedDate": claim.reported_date,
+            "claimAmount": claim.claim_amount,
+            "approvedAmount": claim.approved_amount,
+            "currency": claim.currency,
+            "description": claim.description,
+            "createdAt": to_iso(claim.created_at),
         }
 
     def submit(self, data: OnboardingApplicationCreate) -> dict:
@@ -535,11 +592,7 @@ class OnboardingService:
         if payment.related_type != "onboarding_application" or payment.related_id != application_id:
             raise HTTPException(status_code=404, detail="Payment not found")
         result = self.payments.mark_paid(payment_id, method)
-        self._notify(
-            "payment_received",
-            application,
-            {"amount": f"{result['currency']} {result['amount']:,.2f}", "receiptNumber": result["receiptNumber"]},
-        )
+        self._handle_payment_success(application, result)
         return result
 
     def staff_update_payment(self, application_id: str, payment_id: str, status: str, method: str | None) -> dict:
@@ -551,20 +604,98 @@ class OnboardingService:
             raise HTTPException(status_code=404, detail="Payment not found")
         if status == "paid":
             result = self.payments.mark_paid(payment_id, method or "bank_transfer")
-            self._notify(
-                "payment_received",
-                application,
-                {
-                    "amount": f"{result['currency']} {result['amount']:,.2f}",
-                    "receiptNumber": result["receiptNumber"],
-                },
-            )
+            self._handle_payment_success(application, result)
             return result
         if status == "refunded":
             result = self.payments.refund(payment_id)
             self._notify("payment_refunded", application, {})
             return result
         raise HTTPException(status_code=422, detail="Invalid payment status")
+
+    def _handle_payment_success(self, application: OnboardingApplication, result: dict) -> None:
+        if not application.policy_id:
+            self._issue_policy(application, result)
+            self.repo.save(application)
+        self._notify(
+            "payment_received",
+            application,
+            {"amount": f"{result['currency']} {result['amount']:,.2f}", "receiptNumber": result["receiptNumber"]},
+        )
+
+    def _issue_policy(self, application: OnboardingApplication, payment: dict) -> None:
+        product = self.products.get_by_id(application.product_id)
+        today = datetime.now(timezone.utc).date()
+        expiry = today.replace(year=today.year + 1)
+        policy = Policy(
+            id=self.policies.new_id(),
+            policy_number=self._new_policy_number(),
+            customer_id=application.customer_id,
+            product_id=application.product_id,
+            customer_name=f"{application.applicant_first_name} {application.applicant_last_name}",
+            product_name=application.product_name,
+            policy_type=product.category if product else "",
+            effective_date=today.isoformat(),
+            expiry_date=expiry.isoformat(),
+            premium=payment["amount"],
+            sum_insured=0,
+            currency=payment["currency"],
+            status="active",
+        )
+        saved = self.policies.add(policy)
+        application.policy_id = saved.id
+
+    def _new_policy_number(self) -> str:
+        for _ in range(5):
+            candidate = f"POL-{uuid4().hex[:8].upper()}"
+            if not self.policies.get_by_number(candidate):
+                return candidate
+        raise HTTPException(status_code=500, detail="Could not generate a unique policy number")
+
+    def submit_claim(self, application_id: str, incident_date: str, description: str, claim_amount: float) -> dict:
+        """Public — files a claim against the policy issued for this application."""
+        application = self.repo.get_by_id(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        if not application.policy_id:
+            raise HTTPException(
+                status_code=409,
+                detail="A claim can only be filed once your policy has been issued (after payment).",
+            )
+        policy = self.policies.get_by_id(application.policy_id)
+        if not policy:
+            raise HTTPException(status_code=404, detail="Policy not found")
+        claim = self.claims_service.create(
+            ClaimCreate(
+                claim_number=self._new_claim_number(),
+                policy_id=policy.id,
+                policy_number=policy.policy_number,
+                customer_id=application.customer_id or "",
+                customer_name=f"{application.applicant_first_name} {application.applicant_last_name}",
+                product_name=application.product_name,
+                incident_date=incident_date,
+                reported_date=datetime.now(timezone.utc).date().isoformat(),
+                claim_amount=claim_amount,
+                approved_amount=0,
+                currency=policy.currency,
+                description=description,
+                status="open",
+            )
+        )
+        self.notifications.send(
+            "claim_submitted",
+            application.applicant_email,
+            {"firstName": application.applicant_first_name, "claimNumber": claim["claimNumber"]},
+            "claim",
+            claim["id"],
+        )
+        return claim
+
+    def _new_claim_number(self) -> str:
+        for _ in range(5):
+            candidate = f"CLM-{uuid4().hex[:8].upper()}"
+            if not self.claims_service.repo.get_by_number(candidate):
+                return candidate
+        raise HTTPException(status_code=500, detail="Could not generate a unique claim number")
 
     def save_document(
         self, application_id: str, document_type: str, filename: str, content_type: str, content: bytes

@@ -111,6 +111,7 @@ def onboarding_application_to_dict(a: Any) -> dict:
         "status": a.status,
         "reviewNotes": a.review_notes,
         "customerId": a.customer_id or "",
+        "policyId": a.policy_id or "",
         **_ts(a),
     }
 

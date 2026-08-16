@@ -51,6 +51,11 @@ class ClaimRepository(BaseRepository[Claim]):
     def get_by_number(self, number: str) -> Claim | None:
         return self.db.scalars(select(Claim).where(Claim.claim_number == number)).first()
 
+    def get_by_policy(self, policy_id: str) -> list[Claim]:
+        return list(
+            self.db.scalars(select(Claim).where(Claim.policy_id == policy_id).order_by(Claim.created_at)).all()
+        )
+
 
 class OnboardingApplicationRepository(BaseRepository[OnboardingApplication]):
     model = OnboardingApplication

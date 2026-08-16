@@ -338,6 +338,13 @@ pay_wrong_application = client.post(
 print("pay wrong application", pay_wrong_application.status_code)
 assert pay_wrong_application.status_code in (404, 409)
 
+claim_before_policy = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/claims",
+    json={"incidentDate": "2026-08-01", "description": "Too early", "claimAmount": 1000},
+)
+print("claim before policy issued", claim_before_policy.status_code)
+assert claim_before_policy.status_code == 409
+
 pay_ok = client.post(
     f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/pay",
     json={"method": "paystack"},
@@ -362,6 +369,57 @@ assert [n["templateKey"] for n in application_after_payment.json()["notification
     "application_approved",
     "payment_received",
 ]
+
+# ── Policy issuance + claims ────────────────────────────────────────────────
+
+policy_number = application_after_payment.json()["policyNumber"]
+print("policy issued", policy_number)
+assert policy_number.startswith("POL-")
+
+claim_no_application = client.post(
+    "/api/v1/public/onboarding/applications/not-a-real-app/claims",
+    json={"incidentDate": "2026-08-01", "description": "Windscreen cracked by a stone", "claimAmount": 50000},
+)
+print("claim no application", claim_no_application.status_code)
+assert claim_no_application.status_code == 404
+
+claim_submitted = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/claims",
+    json={"incidentDate": "2026-08-01", "description": "Windscreen cracked by a stone", "claimAmount": 50000},
+)
+print("claim submitted", claim_submitted.status_code, claim_submitted.json().get("claimNumber"))
+assert claim_submitted.status_code == 201
+assert claim_submitted.json()["policyNumber"] == policy_number
+assert claim_submitted.json()["status"] == "open"
+claim_id = claim_submitted.json()["id"]
+
+claim_in_staff_list = client.get("/api/v1/claims", headers=headers)
+print("claim visible in staff register", claim_in_staff_list.status_code, len(claim_in_staff_list.json()))
+assert any(c["id"] == claim_id for c in claim_in_staff_list.json())
+
+application_after_claim = client.get(f"/api/v1/onboarding/applications/{application_id}", headers=headers)
+assert len(application_after_claim.json()["claims"]) == 1
+assert application_after_claim.json()["claims"][0]["id"] == claim_id
+
+lookup_with_claim = client.post(
+    "/api/v1/public/onboarding/applications/lookup",
+    json={"reference": submitted.json()["reference"], "email": "chinwe.obi@example.com"},
+)
+print("lookup shows claim", lookup_with_claim.status_code, len(lookup_with_claim.json()["claims"]))
+assert len(lookup_with_claim.json()["claims"]) == 1
+assert "notes" not in lookup_with_claim.json()["claims"][0]
+assert "assignedTo" not in lookup_with_claim.json()["claims"][0]
+
+claim_status_update = client.put(
+    f"/api/v1/claims/{claim_id}",
+    headers=headers,
+    json={"status": "under_review"},
+)
+print("claim status update", claim_status_update.status_code)
+assert claim_status_update.status_code == 200
+
+application_after_claim_review = client.get(f"/api/v1/onboarding/applications/{application_id}", headers=headers)
+assert application_after_claim_review.json()["claims"][0]["status"] == "under_review"
 
 refund_forbidden = client.put(
     f"/api/v1/onboarding/applications/{application_id}/payments/{payment_id}",

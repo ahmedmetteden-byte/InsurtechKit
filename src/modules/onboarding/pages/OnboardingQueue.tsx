@@ -4,6 +4,7 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
 import { OnboardingService } from '../../../data/services'
+import { claimStatusLabel } from '../../claims'
 import {
   onboardingDocumentTypeLabel,
   ONBOARDING_STATUSES,
@@ -212,6 +213,37 @@ function ReviewPanel({ application, onSave, onClose, onRefresh }: { application:
       )}
 
       <PaymentSection application={application} onRefresh={onRefresh} />
+
+      {application.policyNumber && (
+        <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: '#16A34A', fontSize: 14 }}>✓</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#15803D' }}>
+            Policy issued <span style={{ fontFamily: 'var(--font-mono)' }}>{application.policyNumber}</span> — visible in the Premiums module.
+          </span>
+        </div>
+      )}
+
+      {application.claims.length > 0 && (
+        <div>
+          <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>
+            Claims ({application.claims.length})
+          </label>
+          <Stack gap={6}>
+            {application.claims.map(claim => (
+              <div key={claim.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: '#FAFAF8', border: '1px solid #E4E2DC' }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569' }}>{claim.claimNumber}</p>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#64748B', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>{claim.description}</p>
+                </div>
+                <span style={{ padding: '3px 9px', borderRadius: 20, background: '#EFF6FF', border: '1px solid #BFDBFE', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, color: '#1D4ED8', whiteSpace: 'nowrap' }}>
+                  {claimStatusLabel(claim.status)}
+                </span>
+              </div>
+            ))}
+          </Stack>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94A3B8', marginTop: 6 }}>Manage claim status from the Claims module.</p>
+        </div>
+      )}
 
       <div>
         <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>

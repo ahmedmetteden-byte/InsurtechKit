@@ -10,10 +10,12 @@ import type {
   PayInvoiceInput,
   Payment,
   StaffUpdatePaymentInput,
+  SubmitClaimInput,
   SubmitOnboardingApplicationInput,
   UpdateOnboardingApplicationInput,
   UploadOnboardingDocumentInput,
 } from '../types/OnboardingApplication'
+import type { Claim } from '../../claims'
 import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
 import { api, apiFiles, saveBlob } from '../../../data/http'
 
@@ -76,6 +78,14 @@ class ApiOnboardingServiceImpl {
     )
     emitMemoryDataChange()
     return result
+  }
+
+  async submitClaim(input: SubmitClaimInput): Promise<Claim> {
+    return api.post<Claim>(`/public/onboarding/applications/${input.applicationId}/claims`, {
+      incidentDate: input.incidentDate,
+      description: input.description,
+      claimAmount: input.claimAmount,
+    })
   }
 
   async update(input: UpdateOnboardingApplicationInput): Promise<OnboardingApplication | undefined> {

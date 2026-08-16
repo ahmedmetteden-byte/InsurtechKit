@@ -102,6 +102,9 @@ class OnboardingApplication(StringIdMixin, TimestampMixin, Base):
     customer_id: Mapped[str | None] = mapped_column(
         String(64), ForeignKey("customers.id"), default=None, nullable=True, index=True
     )
+    policy_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("policies.id"), default=None, nullable=True, index=True
+    )
 
 
 class OnboardingDocument(StringIdMixin, TimestampMixin, Base):

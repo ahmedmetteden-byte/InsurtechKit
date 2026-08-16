@@ -235,11 +235,33 @@ class OnboardingApplicationRead(APIModel):
     status: str
     review_notes: str
     customer_id: str
+    policy_id: str
+    policy_number: str
     documents: list[OnboardingDocumentRead] = Field(default_factory=list)
     notifications: list[NotificationRead] = Field(default_factory=list)
     payments: list[PaymentRead] = Field(default_factory=list)
+    claims: list[ClaimRead] = Field(default_factory=list)
     created_at: str
     updated_at: str
+
+
+class ClaimSubmitInput(APIModel):
+    incident_date: str
+    description: str
+    claim_amount: float
+
+
+class PublicClaimRead(APIModel):
+    id: str
+    claim_number: str
+    status: str
+    incident_date: str
+    reported_date: str
+    claim_amount: float
+    approved_amount: float
+    currency: str
+    description: str
+    created_at: str
 
 
 class PaymentRead(APIModel):
@@ -306,8 +328,10 @@ class PublicOnboardingApplicationRead(APIModel):
     applicant_last_name: str
     status: str
     created_at: str
+    policy_number: str
     documents: list[OnboardingDocumentRead] = Field(default_factory=list)
     payments: list[PaymentRead] = Field(default_factory=list)
+    claims: list[PublicClaimRead] = Field(default_factory=list)
 
 
 # ── Roles / Users ──────────────────────────────────────────────────────────

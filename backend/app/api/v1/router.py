@@ -21,6 +21,7 @@ from app.schemas.entities import (
     BrandingUpdate,
     ClaimCreate,
     ClaimRead,
+    ClaimSubmitInput,
     ClaimUpdate,
     CustomerCreate,
     CustomerRead,
@@ -334,6 +335,20 @@ def pay_onboarding_invoice(
     service: OnboardingService = Depends(get_onboarding_service),
 ):
     return service.pay(id, payment_id, body.method)
+
+
+@router.post(
+    "/public/onboarding/applications/{id}/claims",
+    response_model=ClaimRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Public"],
+)
+def submit_onboarding_claim(
+    id: str,
+    body: ClaimSubmitInput,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.submit_claim(id, body.incident_date, body.description, body.claim_amount)
 
 
 # ── Onboarding (staff review) ─────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { useBranding } from '../../../config/BrandingContext'
 import { OnboardingService } from '../../../data/services'
+import { claimStatusLabel } from '../../claims'
 import {
   ONBOARDING_DOCUMENT_TYPES,
   onboardingDocumentTypeLabel,
@@ -53,6 +54,13 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
   const [paying, setPaying] = useState(false)
   const [payError, setPayError] = useState('')
 
+  const [incidentDate, setIncidentDate] = useState('')
+  const [claimDescription, setClaimDescription] = useState('')
+  const [claimAmount, setClaimAmount] = useState('')
+  const [filingClaim, setFilingClaim] = useState(false)
+  const [claimError, setClaimError] = useState('')
+  const [claimSuccess, setClaimSuccess] = useState('')
+
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLookupError('')
@@ -104,14 +112,62 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
     setPayError('')
     setPaying(true)
     try {
-      const result = await Promise.resolve(
+      await Promise.resolve(
         OnboardingService.pay({ applicationId: application.id, paymentId: invoiceId, method: paymentMethod }),
       )
-      setApplication({ ...application, payments: application.payments.map(p => (p.id === result.id ? result : p)) })
+      // Paying issues a policy server-side — re-fetch so the policy number and claim form appear.
+      const refreshed = await Promise.resolve(
+        OnboardingService.lookup({ reference: application.reference, email }),
+      )
+      setApplication(refreshed)
     } catch (err) {
       setPayError(err instanceof Error ? err.message : 'Could not process payment.')
     } finally {
       setPaying(false)
+    }
+  }
+
+  const handleFileClaim = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setClaimError('')
+    setClaimSuccess('')
+    if (!application) return
+    const amount = Number(claimAmount)
+    if (!incidentDate || !claimDescription.trim() || !claimAmount || Number.isNaN(amount) || amount <= 0) {
+      setClaimError('Fill in the incident date, description, and a valid estimated amount.')
+      return
+    }
+    setFilingClaim(true)
+    try {
+      const claim = await Promise.resolve(
+        OnboardingService.submitClaim({ applicationId: application.id, incidentDate, description: claimDescription.trim(), claimAmount: amount }),
+      )
+      setApplication({
+        ...application,
+        claims: [
+          ...application.claims,
+          {
+            id: claim.id,
+            claimNumber: claim.claimNumber,
+            status: claim.status,
+            incidentDate: claim.incidentDate,
+            reportedDate: claim.reportedDate,
+            claimAmount: claim.claimAmount,
+            approvedAmount: claim.approvedAmount,
+            currency: claim.currency,
+            description: claim.description,
+            createdAt: claim.createdAt,
+          },
+        ],
+      })
+      setClaimSuccess(`Claim ${claim.claimNumber} submitted.`)
+      setIncidentDate('')
+      setClaimDescription('')
+      setClaimAmount('')
+    } catch (err) {
+      setClaimError(err instanceof Error ? err.message : 'Could not submit that claim.')
+    } finally {
+      setFilingClaim(false)
     }
   }
 
@@ -252,6 +308,70 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
                   ))}
                 </div>
               </div>
+            )}
+
+            {application.policyNumber && (
+              <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: '#16A34A', fontSize: 14 }}>✓</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#15803D' }}>
+                  Your policy is active — <span style={{ fontFamily: 'var(--font-mono)' }}>{application.policyNumber}</span>
+                </span>
+              </div>
+            )}
+
+            {application.claims.length > 0 && (
+              <div>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A', marginBottom: 10 }}>Your claims</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {application.claims.map(claim => (
+                    <div key={claim.id} style={{ padding: '10px 12px', borderRadius: 8, background: '#F8FAFC', border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569' }}>{claim.claimNumber}</span>
+                        <span style={{ padding: '3px 9px', borderRadius: 20, background: '#EFF6FF', border: '1px solid #BFDBFE', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, color: '#1D4ED8' }}>
+                          {claimStatusLabel(claim.status)}
+                        </span>
+                      </div>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#334155', marginTop: 6 }}>{claim.description}</p>
+                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94A3B8', marginTop: 4 }}>
+                        {formatMoney(claim.claimAmount, claim.currency)} claimed{claim.status === 'approved' || claim.status === 'paid' ? ` · ${formatMoney(claim.approvedAmount, claim.currency)} approved` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {application.policyNumber && (
+              <form onSubmit={handleFileClaim} style={{ borderTop: '1px solid var(--border)', paddingTop: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A' }}>File a claim</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={labelStyle}>Incident date</label>
+                    <input type="date" style={inputStyle} value={incidentDate} onChange={e => setIncidentDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Estimated amount</label>
+                    <input type="number" min="0" style={inputStyle} value={claimAmount} onChange={e => setClaimAmount(e.target.value)} placeholder="₦" />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>What happened?</label>
+                  <textarea style={{ ...inputStyle, minHeight: 90, resize: 'vertical' }} value={claimDescription} onChange={e => setClaimDescription(e.target.value)} placeholder="Describe the incident…" />
+                </div>
+                {claimError && (
+                  <div style={{ padding: '12px 14px', borderRadius: 10, background: '#FEF2F2', border: '1px solid #FECACA', fontFamily: 'var(--font-body)', fontSize: 13, color: '#B91C1C' }}>
+                    {claimError}
+                  </div>
+                )}
+                {claimSuccess && (
+                  <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', fontFamily: 'var(--font-body)', fontSize: 13, color: '#15803D' }}>
+                    {claimSuccess}
+                  </div>
+                )}
+                <button type="submit" disabled={filingClaim} style={{ padding: '12px', borderRadius: 10, background: filingClaim ? '#93C5FD' : '#1D4ED8', color: 'white', fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, border: 'none', cursor: filingClaim ? 'default' : 'pointer' }}>
+                  {filingClaim ? 'Submitting…' : 'Submit Claim'}
+                </button>
+              </form>
             )}
 
             {application.status === 'info_required' && (

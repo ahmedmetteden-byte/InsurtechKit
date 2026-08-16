@@ -42,12 +42,39 @@ TEMPLATES: dict[str, Callable[[dict], tuple[str, str]]] = {
         f"Refund processed — {ctx['reference']}",
         f"Hi {ctx['firstName']}, your payment for application {ctx['reference']} has been refunded.",
     ),
+    "claim_submitted": lambda ctx: (
+        f"Claim received — {ctx['claimNumber']}",
+        f"Hi {ctx['firstName']}, we've received your claim {ctx['claimNumber']}. Our claims team will review it shortly.",
+    ),
+    "claim_under_review": lambda ctx: (
+        f"Your claim is under review — {ctx['claimNumber']}",
+        f"Hi {ctx['firstName']}, claim {ctx['claimNumber']} is now being reviewed by our team.",
+    ),
+    "claim_approved": lambda ctx: (
+        f"Claim approved — {ctx['claimNumber']}",
+        f"Hi {ctx['firstName']}, great news — claim {ctx['claimNumber']} has been approved for {ctx['approvedAmount']}.",
+    ),
+    "claim_rejected": lambda ctx: (
+        f"Update on your claim — {ctx['claimNumber']}",
+        f"Hi {ctx['firstName']}, after review, claim {ctx['claimNumber']} was not approved. Contact us if you have questions.",
+    ),
+    "claim_paid": lambda ctx: (
+        f"Claim payment sent — {ctx['claimNumber']}",
+        f"Hi {ctx['firstName']}, payment for claim {ctx['claimNumber']} has been processed.",
+    ),
 }
 
 STATUS_TEMPLATE = {
     "info_required": "application_info_required",
     "approved": "application_approved",
     "declined": "application_declined",
+}
+
+CLAIM_STATUS_TEMPLATE = {
+    "under_review": "claim_under_review",
+    "approved": "claim_approved",
+    "rejected": "claim_rejected",
+    "paid": "claim_paid",
 }
 
 

@@ -237,8 +237,35 @@ class OnboardingApplicationRead(APIModel):
     customer_id: str
     documents: list[OnboardingDocumentRead] = Field(default_factory=list)
     notifications: list[NotificationRead] = Field(default_factory=list)
+    payments: list[PaymentRead] = Field(default_factory=list)
     created_at: str
     updated_at: str
+
+
+class PaymentRead(APIModel):
+    id: str
+    reference: str
+    related_type: str
+    related_id: str
+    customer_id: str
+    amount: float
+    currency: str
+    method: str
+    status: str
+    description: str
+    paid_at: str
+    receipt_number: str
+    created_at: str
+    updated_at: str
+
+
+class PaymentMethodInput(APIModel):
+    method: str
+
+
+class StaffPaymentUpdate(APIModel):
+    status: str
+    method: str | None = None
 
 
 class NotificationRead(APIModel):
@@ -280,6 +307,7 @@ class PublicOnboardingApplicationRead(APIModel):
     status: str
     created_at: str
     documents: list[OnboardingDocumentRead] = Field(default_factory=list)
+    payments: list[PaymentRead] = Field(default_factory=list)
 
 
 # ── Roles / Users ──────────────────────────────────────────────────────────

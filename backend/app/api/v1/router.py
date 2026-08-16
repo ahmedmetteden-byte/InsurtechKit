@@ -36,6 +36,8 @@ from app.schemas.entities import (
     OnboardingApplicationRead,
     OnboardingApplicationStatusUpdate,
     OnboardingDocumentRead,
+    PaymentMethodInput,
+    PaymentRead,
     PermissionRead,
     PolicyCreate,
     PolicyRead,
@@ -45,6 +47,7 @@ from app.schemas.entities import (
     ProductUpdate,
     PublicOnboardingApplicationRead,
     RoleRead,
+    StaffPaymentUpdate,
     TestConnectionResponse,
     UserCreate,
     UserRead,
@@ -319,6 +322,20 @@ async def upload_onboarding_document(
     return service.save_document(id, document_type, file.filename or "upload", file.content_type or "", content)
 
 
+@router.post(
+    "/public/onboarding/applications/{id}/payments/{payment_id}/pay",
+    response_model=PaymentRead,
+    tags=["Public"],
+)
+def pay_onboarding_invoice(
+    id: str,
+    payment_id: str,
+    body: PaymentMethodInput,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.pay(id, payment_id, body.method)
+
+
 # ── Onboarding (staff review) ─────────────────────────────────────────────
 
 @router.get("/onboarding/applications", response_model=list[OnboardingApplicationRead], tags=["Onboarding"])
@@ -361,6 +378,21 @@ def download_onboarding_document(
         media_type=document["contentType"] or "application/octet-stream",
         filename=document["originalFilename"],
     )
+
+
+@router.put(
+    "/onboarding/applications/{id}/payments/{payment_id}",
+    response_model=PaymentRead,
+    tags=["Onboarding"],
+)
+def update_onboarding_payment(
+    id: str,
+    payment_id: str,
+    body: StaffPaymentUpdate,
+    _: User = Depends(require_permission("onboarding.review")),
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.staff_update_payment(id, payment_id, body.status, body.method)
 
 
 # ── Users / Roles ──────────────────────────────────────────────────────────

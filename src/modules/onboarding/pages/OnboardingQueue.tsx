@@ -8,8 +8,12 @@ import {
   onboardingDocumentTypeLabel,
   ONBOARDING_STATUSES,
   onboardingStatusLabel,
+  PAYMENT_METHODS,
+  paymentMethodLabel,
   type OnboardingApplication,
   type OnboardingStatus,
+  type Payment,
+  type PaymentMethod,
 } from '../types/OnboardingApplication'
 
 function formatDate(iso: string) {
@@ -23,6 +27,10 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatMoney(amount: number, currency: string): string {
+  return `${currency} ${amount.toLocaleString()}`
 }
 
 function StatusPill({ status }: { status: OnboardingStatus }) {
@@ -39,6 +47,99 @@ function StatusPill({ status }: { status: OnboardingStatus }) {
       <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
       {onboardingStatusLabel(status)}
     </span>
+  )
+}
+
+function PaymentStatusPill({ status }: { status: Payment['status'] }) {
+  const map: Record<Payment['status'], { bg: string; color: string; dot: string }> = {
+    pending: { bg: '#FFFBEB', color: '#D97706', dot: '#F59E0B' },
+    paid: { bg: '#F0FDF4', color: '#16A34A', dot: '#16A34A' },
+    refunded: { bg: '#F1F5F9', color: '#475569', dot: '#94A3B8' },
+  }
+  const s = map[status]
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, background: s.bg, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: s.color, whiteSpace: 'nowrap' }}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
+      {status[0].toUpperCase() + status.slice(1)}
+    </span>
+  )
+}
+
+function PaymentSection({ application, onRefresh }: { application: OnboardingApplication; onRefresh: () => void }) {
+  const [method, setMethod] = useState<PaymentMethod>('bank_transfer')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const markPaid = async (paymentId: string) => {
+    setError('')
+    setBusy(true)
+    try {
+      await Promise.resolve(
+        OnboardingService.staffUpdatePayment({ applicationId: application.id, paymentId, status: 'paid', method }),
+      )
+      onRefresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update payment.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const refund = async (paymentId: string) => {
+    setError('')
+    setBusy(true)
+    try {
+      await Promise.resolve(
+        OnboardingService.staffUpdatePayment({ applicationId: application.id, paymentId, status: 'refunded' }),
+      )
+      onRefresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not process refund.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>Payment</label>
+      {application.payments.length === 0 ? (
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#94A3B8' }}>No invoice yet — generated automatically once the application is approved.</p>
+      ) : (
+        <Stack gap={8}>
+          {application.payments.map(p => (
+            <div key={p.id} style={{ padding: '10px 12px', borderRadius: 8, background: '#FAFAF8', border: '1px solid #E4E2DC' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: '#0F172A' }}>{formatMoney(p.amount, p.currency)}</span>
+                <PaymentStatusPill status={p.status} />
+              </div>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94A3B8', marginBottom: 8 }}>{p.description}</p>
+              {p.status === 'pending' && (
+                <Row gap={8} wrap={false}>
+                  <select style={selectStyle} value={method} onChange={e => setMethod(e.target.value as PaymentMethod)}>
+                    {PAYMENT_METHODS.map(m => (
+                      <option key={m} value={m}>{paymentMethodLabel(m)}</option>
+                    ))}
+                  </select>
+                  <Button variant="outline" size="sm" disabled={busy} onClick={() => markPaid(p.id)}>Mark as Paid</Button>
+                </Row>
+              )}
+              {p.status === 'paid' && (
+                <>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748B', marginBottom: 8 }}>
+                    Receipt {p.receiptNumber} · {paymentMethodLabel(p.method)} · {formatDate(p.paidAt)}
+                  </p>
+                  <Button variant="outline" size="sm" disabled={busy} onClick={() => refund(p.id)}>Refund</Button>
+                </>
+              )}
+            </div>
+          ))}
+        </Stack>
+      )}
+      {error && (
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#B91C1C', marginTop: 8 }}>{error}</p>
+      )}
+    </div>
   )
 }
 
@@ -75,7 +176,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ReviewPanel({ application, onSave, onClose }: { application: OnboardingApplication; onSave: (status: OnboardingStatus, notes: string) => void; onClose: () => void }) {
+function ReviewPanel({ application, onSave, onClose, onRefresh }: { application: OnboardingApplication; onSave: (status: OnboardingStatus, notes: string) => void; onClose: () => void; onRefresh: () => void }) {
   const [status, setStatus] = useState<OnboardingStatus>(application.status)
   const [notes, setNotes] = useState(application.reviewNotes)
 
@@ -109,6 +210,8 @@ function ReviewPanel({ application, onSave, onClose }: { application: Onboarding
           </span>
         </div>
       )}
+
+      <PaymentSection application={application} onRefresh={onRefresh} />
 
       <div>
         <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>
@@ -298,7 +401,7 @@ export default function OnboardingQueue() {
       {selected && (
         <ModalShell title={selected.reference} subtitle={`${selected.applicantFirstName} ${selected.applicantLastName}`} onClose={() => setSelectedId(null)}>
           <CardBody>
-            <ReviewPanel application={selected} onSave={handleSave} onClose={() => setSelectedId(null)} />
+            <ReviewPanel application={selected} onSave={handleSave} onClose={() => setSelectedId(null)} onRefresh={refresh} />
           </CardBody>
         </ModalShell>
       )}

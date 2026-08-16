@@ -311,6 +311,85 @@ print("converted customer", converted_customer.status_code, converted_customer.j
 assert converted_customer.status_code == 200
 assert converted_customer.json()["email"] == "chinwe.obi@example.com"
 
+# ── Payments: invoice auto-created on approval, simulated pay, staff refund ─
+
+seed_product = client.get(f"/api/v1/products/{seed_product_id}", headers=headers)
+assert seed_product.status_code == 200
+
+invoices = onboarding_approved.json()["payments"]
+print("invoice created", len(invoices), invoices[0]["amount"] if invoices else None)
+assert len(invoices) == 1
+assert invoices[0]["status"] == "pending"
+assert invoices[0]["amount"] == seed_product.json()["minimumPremium"]
+assert invoices[0]["currency"] == seed_product.json()["currency"]
+payment_id = invoices[0]["id"]
+
+pay_bad_method = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/pay",
+    json={"method": "cash-under-the-table"},
+)
+print("pay bad method", pay_bad_method.status_code)
+assert pay_bad_method.status_code == 422
+
+pay_wrong_application = client.post(
+    f"/api/v1/public/onboarding/applications/not-a-real-app/payments/{payment_id}/pay",
+    json={"method": "paystack"},
+)
+print("pay wrong application", pay_wrong_application.status_code)
+assert pay_wrong_application.status_code in (404, 409)
+
+pay_ok = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/pay",
+    json={"method": "paystack"},
+)
+print("pay ok", pay_ok.status_code, pay_ok.json().get("receiptNumber"))
+assert pay_ok.status_code == 200
+assert pay_ok.json()["status"] == "paid"
+assert pay_ok.json()["receiptNumber"]
+
+pay_again = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/pay",
+    json={"method": "paystack"},
+)
+print("pay already paid", pay_again.status_code)
+assert pay_again.status_code == 409
+
+application_after_payment = client.get(f"/api/v1/onboarding/applications/{application_id}", headers=headers)
+assert [n["templateKey"] for n in application_after_payment.json()["notifications"]] == [
+    "application_submitted",
+    "application_info_required",
+    "document_received",
+    "application_approved",
+    "payment_received",
+]
+
+refund_forbidden = client.put(
+    f"/api/v1/onboarding/applications/{application_id}/payments/{payment_id}",
+    headers=finance_headers,
+    json={"status": "refunded"},
+)
+print("refund forbidden", refund_forbidden.status_code)
+assert refund_forbidden.status_code == 403
+
+refund_ok = client.put(
+    f"/api/v1/onboarding/applications/{application_id}/payments/{payment_id}",
+    headers=headers,
+    json={"status": "refunded"},
+)
+print("refund ok", refund_ok.status_code, refund_ok.json().get("status"))
+assert refund_ok.status_code == 200
+assert refund_ok.json()["status"] == "refunded"
+
+application_after_refund = client.get(f"/api/v1/onboarding/applications/{application_id}", headers=headers)
+assert [n["templateKey"] for n in application_after_refund.json()["notifications"]] == [
+    "application_submitted",
+    "application_info_required",
+    "document_received",
+    "application_approved",
+    "payment_received",
+    "payment_refunded",
+]
+
 onboarding_reapproved = client.put(
     f"/api/v1/onboarding/applications/{application_id}",
     headers=headers,
@@ -318,8 +397,9 @@ onboarding_reapproved = client.put(
 )
 print("onboarding re-approve idempotent", onboarding_reapproved.status_code, onboarding_reapproved.json().get("customerId"))
 assert onboarding_reapproved.json()["customerId"] == converted_customer_id
-# Status didn't actually change (still "approved") — no duplicate notification
-assert len(onboarding_reapproved.json()["notifications"]) == 4
+# Status didn't actually change (still "approved") — no duplicate notification or invoice
+assert len(onboarding_reapproved.json()["notifications"]) == len(application_after_refund.json()["notifications"])
+assert len(onboarding_reapproved.json()["payments"]) == 1
 
 refreshed = client.post("/api/v1/auth/refresh", json={"refreshToken": refresh})
 print("refresh", refreshed.status_code)

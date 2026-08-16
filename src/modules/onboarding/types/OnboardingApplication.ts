@@ -28,6 +28,38 @@ export interface OnboardingApplication {
   documents: OnboardingDocument[]
   /** Staff-only log of notifications sent to the applicant — not shown on the public tracking page. */
   notifications: OnboardingNotification[]
+  /** Invoice(s) generated on approval — visible to both staff and the applicant. */
+  payments: Payment[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type PaymentMethod = 'paystack' | 'flutterwave' | 'bank_transfer' | 'other'
+export type PaymentStatus = 'pending' | 'paid' | 'refunded'
+
+export const PAYMENT_METHODS: PaymentMethod[] = ['paystack', 'flutterwave', 'bank_transfer']
+
+export function paymentMethodLabel(method: PaymentMethod | string): string {
+  const map: Record<string, string> = {
+    paystack: 'Paystack',
+    flutterwave: 'Flutterwave',
+    bank_transfer: 'Bank Transfer',
+    other: 'Other',
+  }
+  return map[method] ?? method
+}
+
+export interface Payment {
+  id: string
+  reference: string
+  customerId: string
+  amount: number
+  currency: string
+  method: string
+  status: PaymentStatus
+  description: string
+  paidAt: string
+  receiptNumber: string
   createdAt: string
   updatedAt: string
 }
@@ -78,6 +110,7 @@ export interface OnboardingApplicationSummary {
   status: OnboardingStatus
   createdAt: string
   documents: OnboardingDocument[]
+  payments: Payment[]
 }
 
 export interface LookupOnboardingApplicationInput {
@@ -89,6 +122,19 @@ export interface UploadOnboardingDocumentInput {
   applicationId: string
   documentType: OnboardingDocumentType
   file: File
+}
+
+export interface PayInvoiceInput {
+  applicationId: string
+  paymentId: string
+  method: PaymentMethod
+}
+
+export interface StaffUpdatePaymentInput {
+  applicationId: string
+  paymentId: string
+  status: 'paid' | 'refunded'
+  method?: PaymentMethod
 }
 
 /** Public submission payload — id/reference/status/timestamps assigned by the service. */

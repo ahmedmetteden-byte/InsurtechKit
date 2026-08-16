@@ -133,6 +133,29 @@ class Notification(StringIdMixin, TimestampMixin, Base):
     related_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
 
+class Payment(StringIdMixin, TimestampMixin, Base):
+    """Provider-neutral payment/invoice record — polymorphic on (related_type,
+    related_id) like Notification, so any module can generate an invoice
+    without a new table. No live gateway is wired; `method` just records
+    which rail the customer chose (Paystack, Flutterwave, bank transfer)."""
+
+    __tablename__ = "payments"
+
+    reference: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    related_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    related_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    customer_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("customers.id"), default=None, nullable=True, index=True
+    )
+    amount: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), default="NGN", nullable=False)
+    method: Mapped[str] = mapped_column(String(32), default="", nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False)
+    description: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    paid_at: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    receipt_number: Mapped[str] = mapped_column(String(32), default="", nullable=False)
+
+
 class Role(StringIdMixin, TimestampMixin, Base):
     __tablename__ = "roles"
 

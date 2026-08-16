@@ -5,8 +5,11 @@ import {
   ONBOARDING_DOCUMENT_TYPES,
   onboardingDocumentTypeLabel,
   onboardingStatusLabel,
+  PAYMENT_METHODS,
+  paymentMethodLabel,
   type OnboardingApplicationSummary,
   type OnboardingDocumentType,
+  type PaymentMethod,
 } from '../types/OnboardingApplication'
 
 interface Props {
@@ -28,6 +31,10 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function formatMoney(amount: number, currency: string): string {
+  return `${currency} ${amount.toLocaleString()}`
+}
+
 export default function TrackApplicationPage({ onBackToHome }: Props) {
   const { branding } = useBranding()
   const [reference, setReference] = useState('')
@@ -41,6 +48,10 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [uploadSuccess, setUploadSuccess] = useState('')
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paystack')
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,6 +96,22 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
       setUploadError(err instanceof Error ? err.message : 'Could not upload that file.')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handlePay = async (invoiceId: string) => {
+    if (!application) return
+    setPayError('')
+    setPaying(true)
+    try {
+      const result = await Promise.resolve(
+        OnboardingService.pay({ applicationId: application.id, paymentId: invoiceId, method: paymentMethod }),
+      )
+      setApplication({ ...application, payments: application.payments.map(p => (p.id === result.id ? result : p)) })
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : 'Could not process payment.')
+    } finally {
+      setPaying(false)
     }
   }
 
@@ -148,6 +175,68 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
                   : "Your application is being reviewed. We'll update this page as it progresses."}
               </div>
             )}
+
+            {application.payments.map(invoice => (
+              <div key={invoice.id}>
+                {invoice.status === 'pending' && (
+                  <div style={{ border: '1px solid #BFDBFE', background: '#EFF6FF', borderRadius: 14, padding: '18px 20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                      <div>
+                        <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#0F172A' }}>Invoice due</p>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#64748B', marginTop: 2 }}>{invoice.description}</p>
+                      </div>
+                      <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#1D4ED8', whiteSpace: 'nowrap' }}>{formatMoney(invoice.amount, invoice.currency)}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <label style={{ ...labelStyle, fontSize: 11, marginBottom: 6 }}>Payment method</label>
+                        <select style={{ ...inputStyle, cursor: 'pointer' }} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}>
+                          {PAYMENT_METHODS.map(m => (
+                            <option key={m} value={m}>{paymentMethodLabel(m)}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={paying}
+                        onClick={() => handlePay(invoice.id)}
+                        style={{ padding: '11px 20px', borderRadius: 10, background: paying ? '#93C5FD' : '#1D4ED8', color: 'white', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, border: 'none', cursor: paying ? 'default' : 'pointer', whiteSpace: 'nowrap' }}
+                      >
+                        {paying ? 'Processing…' : 'Pay Now'}
+                      </button>
+                    </div>
+                    {payError && (
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#B91C1C', marginTop: 10 }}>{payError}</p>
+                    )}
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#60A5FA', marginTop: 10 }}>Simulated payment — no real charge is made in this demo kit.</p>
+                  </div>
+                )}
+                {invoice.status === 'paid' && (
+                  <div style={{ border: '1px solid #BBF7D0', background: '#F0FDF4', borderRadius: 14, padding: '18px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ color: '#16A34A', fontSize: 15 }}>✓</span>
+                      <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: '#0F172A' }}>Receipt</p>
+                    </div>
+                    {[
+                      ['Receipt number', invoice.receiptNumber],
+                      ['Amount', formatMoney(invoice.amount, invoice.currency)],
+                      ['Method', paymentMethodLabel(invoice.method)],
+                      ['Paid', new Date(invoice.paidAt).toLocaleString()],
+                    ].map(([label, value]) => (
+                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: '#0F172A' }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {invoice.status === 'refunded' && (
+                  <div style={{ border: '1px solid var(--border)', background: '#F8FAFC', borderRadius: 14, padding: '14px 18px', fontFamily: 'var(--font-body)', fontSize: 12, color: '#64748B' }}>
+                    This payment ({formatMoney(invoice.amount, invoice.currency)}) was refunded.
+                  </div>
+                )}
+              </div>
+            ))}
 
             {application.documents.length > 0 && (
               <div>

@@ -10,6 +10,7 @@ from app.models.entities import (
     Notification,
     OnboardingApplication,
     OnboardingDocument,
+    Payment,
     Permission,
     Policy,
     Product,
@@ -85,6 +86,26 @@ class NotificationRepository(BaseRepository[Notification]):
                 .order_by(Notification.created_at)
             ).all()
         )
+
+
+class PaymentRepository(BaseRepository[Payment]):
+    model = Payment
+    id_prefix = "pay"
+
+    def get_by_related(self, related_type: str, related_id: str) -> list[Payment]:
+        return list(
+            self.db.scalars(
+                select(Payment)
+                .where(Payment.related_type == related_type, Payment.related_id == related_id)
+                .order_by(Payment.created_at)
+            ).all()
+        )
+
+    def get_by_reference(self, reference: str) -> Payment | None:
+        return self.db.scalars(select(Payment).where(Payment.reference == reference)).first()
+
+    def get_by_receipt_number(self, receipt_number: str) -> Payment | None:
+        return self.db.scalars(select(Payment).where(Payment.receipt_number == receipt_number)).first()
 
 
 class RoleRepository(BaseRepository[Role]):

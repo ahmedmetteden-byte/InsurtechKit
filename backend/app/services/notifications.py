@@ -33,6 +33,15 @@ TEMPLATES: dict[str, Callable[[dict], tuple[str, str]]] = {
         f"Hi {ctx['firstName']}, we've received {ctx['filename']} for your application {ctx['reference']}. "
         f"Our team will review it shortly.",
     ),
+    "payment_received": lambda ctx: (
+        f"Payment received — {ctx['reference']}",
+        f"Hi {ctx['firstName']}, we've received your payment of {ctx['amount']} for application "
+        f"{ctx['reference']}. Receipt number: {ctx['receiptNumber']}.",
+    ),
+    "payment_refunded": lambda ctx: (
+        f"Refund processed — {ctx['reference']}",
+        f"Hi {ctx['firstName']}, your payment for application {ctx['reference']} has been refunded.",
+    ),
 }
 
 STATUS_TEMPLATE = {

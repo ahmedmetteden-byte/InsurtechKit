@@ -9,6 +9,9 @@ import type {
   OnboardingDocument,
   OnboardingNotification,
   OnboardingStatus,
+  PayInvoiceInput,
+  Payment,
+  StaffUpdatePaymentInput,
   SubmitOnboardingApplicationInput,
   UpdateOnboardingApplicationInput,
   UploadOnboardingDocumentInput,
@@ -25,6 +28,14 @@ function newCustomerNumber(): string {
   return `CUS-${crypto.randomUUID().split('-')[0].toUpperCase()}`
 }
 
+function newPaymentReference(): string {
+  return `PAY-${crypto.randomUUID().split('-')[0].toUpperCase()}`
+}
+
+function newReceiptNumber(): string {
+  return `RCT-${crypto.randomUUID().split('-')[0].toUpperCase()}`
+}
+
 /** Memory-only wrapper — keeps the real File so "download" works without a backend. */
 interface StoredDocument extends OnboardingDocument {
   file: File
@@ -32,6 +43,11 @@ interface StoredDocument extends OnboardingDocument {
 
 /** Memory-only wrapper — tags each notification with the application it belongs to. */
 interface StoredNotification extends OnboardingNotification {
+  applicationId: string
+}
+
+/** Memory-only wrapper — tags each payment with the application it belongs to. */
+interface StoredPayment extends Payment {
   applicationId: string
 }
 
@@ -59,6 +75,14 @@ const NOTIFICATION_TEMPLATES: Record<string, (ctx: Record<string, string>) => [s
   document_received: ctx => [
     `We received your document — ${ctx.reference}`,
     `Hi ${ctx.firstName}, we've received ${ctx.filename} for your application ${ctx.reference}. Our team will review it shortly.`,
+  ],
+  payment_received: ctx => [
+    `Payment received — ${ctx.reference}`,
+    `Hi ${ctx.firstName}, we've received your payment of ${ctx.amount} for application ${ctx.reference}. Receipt number: ${ctx.receiptNumber}.`,
+  ],
+  payment_refunded: ctx => [
+    `Refund processed — ${ctx.reference}`,
+    `Hi ${ctx.firstName}, your payment for application ${ctx.reference} has been refunded.`,
   ],
 }
 
@@ -118,6 +142,7 @@ class OnboardingServiceImpl {
   private applications: OnboardingApplication[] = []
   private documents: StoredDocument[] = []
   private notifications: StoredNotification[] = []
+  private payments: StoredPayment[] = []
 
   private documentsFor(applicationId: string): OnboardingDocument[] {
     return this.documents
@@ -131,6 +156,12 @@ class OnboardingServiceImpl {
       .map(({ applicationId: _applicationId, ...notification }) => notification)
   }
 
+  private paymentsFor(applicationId: string): Payment[] {
+    return this.payments
+      .filter(p => p.applicationId === applicationId)
+      .map(({ applicationId: _applicationId, ...payment }) => payment)
+  }
+
   private notify(templateKey: string, application: OnboardingApplication, extra?: Record<string, string>): void {
     const notification = buildNotification(templateKey, application.applicantEmail, {
       firstName: application.applicantFirstName,
@@ -141,11 +172,33 @@ class OnboardingServiceImpl {
     this.notifications = [...this.notifications, { ...notification, applicationId: application.id }]
   }
 
+  private createInvoice(application: OnboardingApplication): void {
+    const product = MemoryProductService.getById(application.productId)
+    const now = new Date().toISOString()
+    const payment: StoredPayment = {
+      id: `pay-${crypto.randomUUID()}`,
+      applicationId: application.id,
+      reference: newPaymentReference(),
+      customerId: application.customerId,
+      amount: product?.minimumPremium ?? 0,
+      currency: product?.currency ?? 'NGN',
+      method: '',
+      status: 'pending',
+      description: `Premium for ${application.productName} — ${application.reference}`,
+      paidAt: '',
+      receiptNumber: '',
+      createdAt: now,
+      updatedAt: now,
+    }
+    this.payments = [...this.payments, payment]
+  }
+
   private withRelated(application: OnboardingApplication): OnboardingApplication {
     return {
       ...application,
       documents: this.documentsFor(application.id),
       notifications: this.notificationsFor(application.id),
+      payments: this.paymentsFor(application.id),
     }
   }
 
@@ -174,6 +227,7 @@ class OnboardingServiceImpl {
       status: application.status,
       createdAt: application.createdAt,
       documents: this.documentsFor(application.id),
+      payments: this.paymentsFor(application.id),
     }
   }
 
@@ -242,6 +296,7 @@ class OnboardingServiceImpl {
       customerId: '',
       documents: [],
       notifications: [],
+      payments: [],
       createdAt: now,
       updatedAt: now,
     }
@@ -266,6 +321,9 @@ class OnboardingServiceImpl {
     if (updated.status === 'approved' && !updated.customerId) {
       updated.customerId = convertToCustomer(updated)
     }
+    if (updated.status === 'approved' && this.paymentsFor(updated.id).length === 0) {
+      this.createInvoice(updated)
+    }
     if (updated.status !== current.status) {
       const templateKey = STATUS_NOTIFICATION_TEMPLATE[updated.status]
       if (templateKey) {
@@ -281,11 +339,98 @@ class OnboardingServiceImpl {
     return this.withRelated(updated)
   }
 
+  /** Public, simulated checkout — no live gateway is called. */
+  pay(input: PayInvoiceInput): Payment {
+    const application = this.applications.find(a => a.id === input.applicationId)
+    if (!application) {
+      throw new Error('Application not found')
+    }
+    if (application.status !== 'approved') {
+      throw new Error('Payment is only available once the application has been approved.')
+    }
+    const index = this.payments.findIndex(p => p.id === input.paymentId && p.applicationId === input.applicationId)
+    if (index === -1) {
+      throw new Error('Payment not found')
+    }
+    const payment = this.payments[index]
+    if (payment.status === 'paid') {
+      throw new Error('Payment has already been marked as paid')
+    }
+    if (payment.status === 'refunded') {
+      throw new Error('This payment was refunded and cannot be marked as paid')
+    }
+    const now = new Date().toISOString()
+    const updated: StoredPayment = {
+      ...payment,
+      status: 'paid',
+      method: input.method,
+      paidAt: now,
+      receiptNumber: newReceiptNumber(),
+      updatedAt: now,
+    }
+    this.payments = [...this.payments.slice(0, index), updated, ...this.payments.slice(index + 1)]
+    this.notify('payment_received', application, {
+      amount: `${updated.currency} ${updated.amount.toLocaleString()}`,
+      receiptNumber: updated.receiptNumber,
+    })
+    emitMemoryDataChange()
+    const { applicationId: _applicationId, ...result } = updated
+    return result
+  }
+
+  /** Staff override — e.g. reconciling a bank transfer, or issuing a refund. */
+  staffUpdatePayment(input: StaffUpdatePaymentInput): Payment {
+    const application = this.applications.find(a => a.id === input.applicationId)
+    if (!application) {
+      throw new Error('Application not found')
+    }
+    const index = this.payments.findIndex(p => p.id === input.paymentId && p.applicationId === input.applicationId)
+    if (index === -1) {
+      throw new Error('Payment not found')
+    }
+    const payment = this.payments[index]
+    const now = new Date().toISOString()
+
+    if (input.status === 'paid') {
+      if (payment.status === 'paid') throw new Error('Payment has already been marked as paid')
+      if (payment.status === 'refunded') throw new Error('This payment was refunded and cannot be marked as paid')
+      const updated: StoredPayment = {
+        ...payment,
+        status: 'paid',
+        method: input.method ?? 'bank_transfer',
+        paidAt: now,
+        receiptNumber: newReceiptNumber(),
+        updatedAt: now,
+      }
+      this.payments = [...this.payments.slice(0, index), updated, ...this.payments.slice(index + 1)]
+      this.notify('payment_received', application, {
+        amount: `${updated.currency} ${updated.amount.toLocaleString()}`,
+        receiptNumber: updated.receiptNumber,
+      })
+      emitMemoryDataChange()
+      const { applicationId: _applicationId, ...result } = updated
+      return result
+    }
+
+    if (input.status === 'refunded') {
+      if (payment.status !== 'paid') throw new Error('Only paid payments can be refunded')
+      const updated: StoredPayment = { ...payment, status: 'refunded', updatedAt: now }
+      this.payments = [...this.payments.slice(0, index), updated, ...this.payments.slice(index + 1)]
+      this.notify('payment_refunded', application, {})
+      emitMemoryDataChange()
+      const { applicationId: _applicationId, ...result } = updated
+      return result
+    }
+
+    throw new Error('Invalid payment status')
+  }
+
   /** Clear submissions (useful for demos / tests). */
   reset(): void {
     this.applications = []
     this.documents = []
     this.notifications = []
+    this.payments = []
     emitMemoryDataChange()
   }
 }

@@ -142,6 +142,24 @@ def notification_to_dict(n: Any) -> dict:
     }
 
 
+def payment_to_dict(p: Any) -> dict:
+    return {
+        "id": p.id,
+        "reference": p.reference,
+        "relatedType": p.related_type,
+        "relatedId": p.related_id,
+        "customerId": p.customer_id or "",
+        "amount": p.amount,
+        "currency": p.currency,
+        "method": p.method,
+        "status": p.status,
+        "description": p.description,
+        "paidAt": p.paid_at,
+        "receiptNumber": p.receipt_number,
+        **_ts(p),
+    }
+
+
 def role_to_dict(r: Any) -> dict:
     return {
         "id": r.id,

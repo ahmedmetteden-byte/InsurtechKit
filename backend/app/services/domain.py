@@ -19,6 +19,7 @@ from app.models.entities import (
     Notification,
     OnboardingApplication,
     OnboardingDocument,
+    Payment,
     Policy,
     Product,
     User,
@@ -32,6 +33,7 @@ from app.repositories import (
     NotificationRepository,
     OnboardingApplicationRepository,
     OnboardingDocumentRepository,
+    PaymentRepository,
     PermissionRepository,
     PolicyRepository,
     ProductRepository,
@@ -67,6 +69,7 @@ from app.utils.mappers import (
     notification_to_dict,
     onboarding_application_to_dict,
     onboarding_document_to_dict,
+    payment_to_dict,
     permission_to_dict,
     policy_to_dict,
     product_to_dict,
@@ -79,6 +82,7 @@ ONBOARDING_STATUSES = {"submitted", "in_review", "info_required", "approved", "d
 ONBOARDING_DOCUMENT_TYPES = {"identification", "proof_of_address", "other"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 ALLOWED_UPLOAD_CONTENT_TYPES = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
+PAYMENT_METHODS = {"paystack", "flutterwave", "bank_transfer", "other"}
 
 
 def _now_iso() -> str:
@@ -325,6 +329,78 @@ class NotificationService:
         return [notification_to_dict(n) for n in self.repo.get_by_related(related_type, related_id)]
 
 
+class PaymentService:
+    """Provider-neutral payment/invoice dispatch — no live gateway is wired.
+
+    `method` just records which rail the customer chose; connecting a real
+    Paystack/Flutterwave/bank-transfer integration later means adding a call
+    inside `mark_paid`, not changing callers.
+    """
+
+    def __init__(self, db: Session):
+        self.repo = PaymentRepository(db)
+
+    def get(self, id: str) -> Payment:
+        payment = self.repo.get_by_id(id)
+        if not payment:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        return payment
+
+    def create_for(
+        self, related_type: str, related_id: str, customer_id: str | None, amount: float, currency: str, description: str
+    ) -> dict:
+        entity = Payment(
+            id=self.repo.new_id(),
+            reference=self._new_reference(),
+            related_type=related_type,
+            related_id=related_id,
+            customer_id=customer_id or None,
+            amount=amount,
+            currency=currency,
+            status="pending",
+            description=description,
+        )
+        return payment_to_dict(self.repo.add(entity))
+
+    def list_for(self, related_type: str, related_id: str) -> list[dict]:
+        return [payment_to_dict(p) for p in self.repo.get_by_related(related_type, related_id)]
+
+    def mark_paid(self, id: str, method: str) -> dict:
+        payment = self.get(id)
+        if payment.status == "paid":
+            raise HTTPException(status_code=409, detail="Payment has already been marked as paid")
+        if payment.status == "refunded":
+            raise HTTPException(status_code=409, detail="This payment was refunded and cannot be marked as paid")
+        if method not in PAYMENT_METHODS:
+            raise HTTPException(status_code=422, detail="Invalid payment method")
+        payment.status = "paid"
+        payment.method = method
+        payment.paid_at = _now_iso()
+        payment.receipt_number = self._new_receipt_number()
+        return payment_to_dict(self.repo.save(payment))
+
+    def refund(self, id: str) -> dict:
+        payment = self.get(id)
+        if payment.status != "paid":
+            raise HTTPException(status_code=409, detail="Only paid payments can be refunded")
+        payment.status = "refunded"
+        return payment_to_dict(self.repo.save(payment))
+
+    def _new_reference(self) -> str:
+        for _ in range(5):
+            candidate = f"PAY-{uuid4().hex[:8].upper()}"
+            if not self.repo.get_by_reference(candidate):
+                return candidate
+        raise HTTPException(status_code=500, detail="Could not generate a unique payment reference")
+
+    def _new_receipt_number(self) -> str:
+        for _ in range(5):
+            candidate = f"RCT-{uuid4().hex[:8].upper()}"
+            if not self.repo.get_by_receipt_number(candidate):
+                return candidate
+        raise HTTPException(status_code=500, detail="Could not generate a unique receipt number")
+
+
 class OnboardingService:
     def __init__(self, db: Session):
         self.repo = OnboardingApplicationRepository(db)
@@ -332,6 +408,7 @@ class OnboardingService:
         self.customers = CustomerRepository(db)
         self.documents = OnboardingDocumentRepository(db)
         self.notifications = NotificationService(db)
+        self.payments = PaymentService(db)
         self.branding = BrandingRepository(db)
 
     def _company_name(self) -> str:
@@ -356,6 +433,7 @@ class OnboardingService:
             onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
         ]
         data["notifications"] = self.notifications.list_for("onboarding_application", application.id)
+        data["payments"] = self.payments.list_for("onboarding_application", application.id)
         return data
 
     def list(self) -> list[dict]:
@@ -383,6 +461,7 @@ class OnboardingService:
             "documents": [
                 onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
             ],
+            "payments": self.payments.list_for("onboarding_application", application.id),
         }
 
     def submit(self, data: OnboardingApplicationCreate) -> dict:
@@ -422,11 +501,70 @@ class OnboardingService:
         if entity.status == "approved" and not entity.customer_id:
             entity.customer_id = self._convert_to_customer(entity).id
         saved = self.repo.save(entity)
+        if saved.status == "approved" and not self.payments.list_for("onboarding_application", saved.id):
+            self._create_invoice(saved)
         if saved.status != previous_status:
             template_key = STATUS_TEMPLATE.get(saved.status)
             if template_key:
                 self._notify(template_key, saved)
         return self._to_dict(saved)
+
+    def _create_invoice(self, application: OnboardingApplication) -> None:
+        product = self.products.get_by_id(application.product_id)
+        amount = product.minimum_premium if product else 0
+        currency = product.currency if product else "NGN"
+        self.payments.create_for(
+            "onboarding_application",
+            application.id,
+            application.customer_id,
+            amount,
+            currency,
+            f"Premium for {application.product_name} — {application.reference}",
+        )
+
+    def pay(self, application_id: str, payment_id: str, method: str) -> dict:
+        """Public, simulated checkout — no live gateway is called."""
+        application = self.repo.get_by_id(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        if application.status != "approved":
+            raise HTTPException(
+                status_code=409, detail="Payment is only available once the application has been approved."
+            )
+        payment = self.payments.get(payment_id)
+        if payment.related_type != "onboarding_application" or payment.related_id != application_id:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        result = self.payments.mark_paid(payment_id, method)
+        self._notify(
+            "payment_received",
+            application,
+            {"amount": f"{result['currency']} {result['amount']:,.2f}", "receiptNumber": result["receiptNumber"]},
+        )
+        return result
+
+    def staff_update_payment(self, application_id: str, payment_id: str, status: str, method: str | None) -> dict:
+        application = self.repo.get_by_id(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        payment = self.payments.get(payment_id)
+        if payment.related_type != "onboarding_application" or payment.related_id != application_id:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        if status == "paid":
+            result = self.payments.mark_paid(payment_id, method or "bank_transfer")
+            self._notify(
+                "payment_received",
+                application,
+                {
+                    "amount": f"{result['currency']} {result['amount']:,.2f}",
+                    "receiptNumber": result["receiptNumber"],
+                },
+            )
+            return result
+        if status == "refunded":
+            result = self.payments.refund(payment_id)
+            self._notify("payment_refunded", application, {})
+            return result
+        raise HTTPException(status_code=422, detail="Invalid payment status")
 
     def save_document(
         self, application_id: str, document_type: str, filename: str, content_type: str, content: bytes

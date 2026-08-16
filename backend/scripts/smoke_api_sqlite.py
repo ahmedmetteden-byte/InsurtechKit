@@ -202,6 +202,75 @@ assert onboarding_review.status_code == 200
 assert onboarding_review.json()["status"] == "in_review"
 assert onboarding_review.json()["customerId"] == ""
 
+# ── Onboarding documents: lookup, gated upload, staff download ────────────
+
+lookup_wrong_email = client.post(
+    "/api/v1/public/onboarding/applications/lookup",
+    json={"reference": submitted.json()["reference"], "email": "someone.else@example.com"},
+)
+print("lookup wrong email", lookup_wrong_email.status_code)
+assert lookup_wrong_email.status_code == 404
+
+lookup_ok = client.post(
+    "/api/v1/public/onboarding/applications/lookup",
+    json={"reference": submitted.json()["reference"], "email": "chinwe.obi@example.com"},
+)
+print("lookup ok", lookup_ok.status_code, lookup_ok.json().get("status"))
+assert lookup_ok.status_code == 200
+assert lookup_ok.json()["status"] == "in_review"
+assert "reviewNotes" not in lookup_ok.json()
+
+upload_before_info_required = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/documents",
+    data={"document_type": "identification"},
+    files={"file": ("id.pdf", b"%PDF-1.4 fake id", "application/pdf")},
+)
+print("upload before info_required", upload_before_info_required.status_code)
+assert upload_before_info_required.status_code == 409
+
+onboarding_info_required = client.put(
+    f"/api/v1/onboarding/applications/{application_id}",
+    headers=headers,
+    json={"status": "info_required"},
+)
+print("onboarding info_required", onboarding_info_required.status_code)
+assert onboarding_info_required.status_code == 200
+
+upload_bad_type = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/documents",
+    data={"document_type": "identification"},
+    files={"file": ("virus.exe", b"not a real document", "application/x-msdownload")},
+)
+print("upload bad type", upload_bad_type.status_code)
+assert upload_bad_type.status_code == 415
+
+upload_ok = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/documents",
+    data={"document_type": "identification"},
+    files={"file": ("id.pdf", b"%PDF-1.4 fake id", "application/pdf")},
+)
+print("upload ok", upload_ok.status_code, upload_ok.json().get("originalFilename"))
+assert upload_ok.status_code == 201
+document_id = upload_ok.json()["id"]
+
+lookup_after_upload = client.post(
+    "/api/v1/public/onboarding/applications/lookup",
+    json={"reference": submitted.json()["reference"], "email": "chinwe.obi@example.com"},
+)
+print("lookup after upload", lookup_after_upload.status_code, len(lookup_after_upload.json()["documents"]))
+assert len(lookup_after_upload.json()["documents"]) == 1
+
+download_unauth = client.get(f"/api/v1/onboarding/applications/{application_id}/documents/{document_id}/download")
+print("download unauth", download_unauth.status_code)
+assert download_unauth.status_code == 401
+
+download_ok = client.get(
+    f"/api/v1/onboarding/applications/{application_id}/documents/{document_id}/download", headers=headers
+)
+print("download ok", download_ok.status_code, len(download_ok.content))
+assert download_ok.status_code == 200
+assert download_ok.content == b"%PDF-1.4 fake id"
+
 onboarding_approved = client.put(
     f"/api/v1/onboarding/applications/{application_id}",
     headers=headers,

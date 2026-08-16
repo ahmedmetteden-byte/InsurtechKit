@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -16,6 +17,7 @@ from app.models.entities import (
     FeatureFlags,
     Integration,
     OnboardingApplication,
+    OnboardingDocument,
     Policy,
     Product,
     User,
@@ -27,6 +29,7 @@ from app.repositories import (
     FeatureFlagsRepository,
     IntegrationRepository,
     OnboardingApplicationRepository,
+    OnboardingDocumentRepository,
     PermissionRepository,
     PolicyRepository,
     ProductRepository,
@@ -51,6 +54,7 @@ from app.schemas.entities import (
     UserCreate,
     UserUpdate,
 )
+from app.services.storage import resolve_path, save_upload
 from app.utils.mappers import (
     branding_to_dict,
     claim_to_dict,
@@ -58,14 +62,19 @@ from app.utils.mappers import (
     flags_to_dict,
     integration_to_dict,
     onboarding_application_to_dict,
+    onboarding_document_to_dict,
     permission_to_dict,
     policy_to_dict,
     product_to_dict,
     role_to_dict,
     user_to_dict,
 )
+from app.utils.serializers import to_iso
 
 ONBOARDING_STATUSES = {"submitted", "in_review", "info_required", "approved", "declined"}
+ONBOARDING_DOCUMENT_TYPES = {"identification", "proof_of_address", "other"}
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+ALLOWED_UPLOAD_CONTENT_TYPES = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
 
 
 def _now_iso() -> str:
@@ -286,15 +295,41 @@ class OnboardingService:
         self.repo = OnboardingApplicationRepository(db)
         self.products = ProductRepository(db)
         self.customers = CustomerRepository(db)
+        self.documents = OnboardingDocumentRepository(db)
+
+    def _to_dict(self, application: OnboardingApplication) -> dict:
+        data = onboarding_application_to_dict(application)
+        data["documents"] = [
+            onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
+        ]
+        return data
 
     def list(self) -> list[dict]:
-        return [onboarding_application_to_dict(a) for a in self.repo.get_all()]
+        return [self._to_dict(a) for a in self.repo.get_all()]
 
     def get(self, id: str) -> dict:
         a = self.repo.get_by_id(id)
         if not a:
             raise HTTPException(status_code=404, detail="Application not found")
-        return onboarding_application_to_dict(a)
+        return self._to_dict(a)
+
+    def lookup(self, reference: str, email: str) -> dict:
+        """Public, email-gated status check — used by applicants to track their application."""
+        application = self.repo.get_by_reference(reference.strip().upper())
+        if not application or application.applicant_email != email.strip().lower():
+            raise HTTPException(status_code=404, detail="No application found for that reference and email")
+        return {
+            "id": application.id,
+            "reference": application.reference,
+            "productName": application.product_name,
+            "applicantFirstName": application.applicant_first_name,
+            "applicantLastName": application.applicant_last_name,
+            "status": application.status,
+            "createdAt": to_iso(application.created_at),
+            "documents": [
+                onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
+            ],
+        }
 
     def submit(self, data: OnboardingApplicationCreate) -> dict:
         if not data.consent:
@@ -316,7 +351,7 @@ class OnboardingService:
             consent_at=_now_iso(),
             status="submitted",
         )
-        return onboarding_application_to_dict(self.repo.add(entity))
+        return self._to_dict(self.repo.add(entity))
 
     def update_status(self, id: str, data: OnboardingApplicationStatusUpdate) -> dict:
         entity = self.repo.get_by_id(id)
@@ -329,7 +364,50 @@ class OnboardingService:
             setattr(entity, field, value)
         if entity.status == "approved" and not entity.customer_id:
             entity.customer_id = self._convert_to_customer(entity).id
-        return onboarding_application_to_dict(self.repo.save(entity))
+        return self._to_dict(self.repo.save(entity))
+
+    def save_document(
+        self, application_id: str, document_type: str, filename: str, content_type: str, content: bytes
+    ) -> dict:
+        application = self.repo.get_by_id(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        if application.status != "info_required":
+            raise HTTPException(
+                status_code=409,
+                detail="Documents can only be uploaded while the application is marked 'More Info Required'.",
+            )
+        if document_type not in ONBOARDING_DOCUMENT_TYPES:
+            raise HTTPException(status_code=422, detail="Invalid document type")
+        if not content:
+            raise HTTPException(status_code=422, detail="Uploaded file is empty")
+        if len(content) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="File exceeds the 10MB upload limit")
+        if content_type not in ALLOWED_UPLOAD_CONTENT_TYPES:
+            raise HTTPException(
+                status_code=415, detail="Unsupported file type. Upload a PDF, JPG, PNG, or WEBP file."
+            )
+
+        storage_path = save_upload(application_id, filename, content)
+        document = OnboardingDocument(
+            id=self.documents.new_id(),
+            application_id=application_id,
+            document_type=document_type,
+            original_filename=filename,
+            content_type=content_type,
+            size_bytes=len(content),
+            storage_path=storage_path,
+        )
+        return onboarding_document_to_dict(self.documents.add(document))
+
+    def get_document_file(self, application_id: str, document_id: str) -> tuple[dict, Path]:
+        document = self.documents.get_by_id(document_id)
+        if not document or document.application_id != application_id:
+            raise HTTPException(status_code=404, detail="Document not found")
+        path = resolve_path(document.storage_path)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="File is missing from storage")
+        return onboarding_document_to_dict(document), path
 
     def _convert_to_customer(self, application: OnboardingApplication) -> Customer:
         """Approving an application onboards the applicant as a real customer record."""

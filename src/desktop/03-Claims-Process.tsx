@@ -3,7 +3,7 @@ import { Icon } from '../icons'
 import { useBranding } from '../config/BrandingContext'
 import type { BrandingConfig } from '../config/branding'
 
-type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote' | 'track'
 interface Props { onNavigate: (p: Page) => void }
 
 function Eyebrow({ children, light = false }: { children: string; light?: boolean }) {

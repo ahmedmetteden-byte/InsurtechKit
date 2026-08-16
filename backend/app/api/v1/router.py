@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi.responses import FileResponse
 
 from app.api.v1.auth import router as auth_router
 from app.dependencies.auth import get_user_permissions, require_permission
@@ -31,8 +32,10 @@ from app.schemas.entities import (
     IntegrationUpdate,
     MessageResponse,
     OnboardingApplicationCreate,
+    OnboardingApplicationLookup,
     OnboardingApplicationRead,
     OnboardingApplicationStatusUpdate,
+    OnboardingDocumentRead,
     PermissionRead,
     PolicyCreate,
     PolicyRead,
@@ -40,6 +43,7 @@ from app.schemas.entities import (
     ProductCreate,
     ProductRead,
     ProductUpdate,
+    PublicOnboardingApplicationRead,
     RoleRead,
     TestConnectionResponse,
     UserCreate,
@@ -287,6 +291,34 @@ def submit_onboarding_application(
     return service.submit(body)
 
 
+@router.post(
+    "/public/onboarding/applications/lookup",
+    response_model=PublicOnboardingApplicationRead,
+    tags=["Public"],
+)
+def lookup_onboarding_application(
+    body: OnboardingApplicationLookup,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.lookup(body.reference, body.email)
+
+
+@router.post(
+    "/public/onboarding/applications/{id}/documents",
+    response_model=OnboardingDocumentRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Public"],
+)
+async def upload_onboarding_document(
+    id: str,
+    document_type: str = Form("other"),
+    file: UploadFile = File(...),
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    content = await file.read()
+    return service.save_document(id, document_type, file.filename or "upload", file.content_type or "", content)
+
+
 # ── Onboarding (staff review) ─────────────────────────────────────────────
 
 @router.get("/onboarding/applications", response_model=list[OnboardingApplicationRead], tags=["Onboarding"])
@@ -314,6 +346,21 @@ def update_onboarding_application(
     service: OnboardingService = Depends(get_onboarding_service),
 ):
     return service.update_status(id, body)
+
+
+@router.get("/onboarding/applications/{id}/documents/{doc_id}/download", tags=["Onboarding"])
+def download_onboarding_document(
+    id: str,
+    doc_id: str,
+    _: User = Depends(require_permission("onboarding.view")),
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    document, path = service.get_document_file(id, doc_id)
+    return FileResponse(
+        path,
+        media_type=document["contentType"] or "application/octet-stream",
+        filename=document["originalFilename"],
+    )
 
 
 # ── Users / Roles ──────────────────────────────────────────────────────────

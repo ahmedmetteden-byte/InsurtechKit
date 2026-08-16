@@ -235,8 +235,36 @@ class OnboardingApplicationRead(APIModel):
     status: str
     review_notes: str
     customer_id: str
+    documents: list[OnboardingDocumentRead] = Field(default_factory=list)
     created_at: str
     updated_at: str
+
+
+class OnboardingDocumentRead(APIModel):
+    id: str
+    application_id: str
+    document_type: str
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    created_at: str
+    updated_at: str
+
+
+class OnboardingApplicationLookup(APIModel):
+    reference: str
+    email: str
+
+
+class PublicOnboardingApplicationRead(APIModel):
+    id: str
+    reference: str
+    product_name: str
+    applicant_first_name: str
+    applicant_last_name: str
+    status: str
+    created_at: str
+    documents: list[OnboardingDocumentRead] = Field(default_factory=list)
 
 
 # ── Roles / Users ──────────────────────────────────────────────────────────

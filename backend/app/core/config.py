@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     DEMO_USER_PASSWORD: str = "Password123!"
     ENABLE_DOCS: bool = True
     RUN_MIGRATIONS_ON_STARTUP: bool = False
+    UPLOAD_DIR: str = "uploads"
 
     @property
     def cors_origin_list(self) -> list[str]:

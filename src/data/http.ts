@@ -91,3 +91,62 @@ export const api = {
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   delete: <T>(path: string) => request<T>('DELETE', path),
 }
+
+/** Multipart form upload (file inputs) — omit Content-Type so the browser sets the boundary. */
+async function postForm<T>(path: string, formData: FormData): Promise<T> {
+  const headers: Record<string, string> = {}
+  const token = getAccessToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const res = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', headers, body: formData })
+
+  const text = await res.text()
+  let data: unknown = null
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch {
+      data = text
+    }
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) notifyUnauthorized()
+    const message =
+      typeof data === 'object' && data && 'error' in data
+        ? String((data as { error?: { message?: string } }).error?.message ?? res.statusText)
+        : res.statusText || `HTTP ${res.status}`
+    throw new ApiError(res.status, message, data)
+  }
+
+  return data as T
+}
+
+/** Fetches a binary response (e.g. a document download) with the Bearer token attached. */
+async function getBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {}
+  const token = getAccessToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const res = await fetch(`${API_BASE_URL}${path}`, { headers })
+  if (!res.ok) {
+    if (res.status === 401) notifyUnauthorized()
+    throw new ApiError(res.status, res.statusText)
+  }
+  return res.blob()
+}
+
+/** Triggers a browser save-as for a blob, without navigating the page. */
+export function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export const apiFiles = {
+  postForm: <T>(path: string, formData: FormData) => postForm<T>(path, formData),
+  getBlob: (path: string) => getBlob(path),
+}

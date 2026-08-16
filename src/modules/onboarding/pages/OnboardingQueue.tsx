@@ -4,13 +4,25 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Button, Card, CardBody, CardHeader, Row, Stack } from '../../../components/ui'
 import { OnboardingService } from '../../../data/services'
-import { ONBOARDING_STATUSES, onboardingStatusLabel, type OnboardingApplication, type OnboardingStatus } from '../types/OnboardingApplication'
+import {
+  onboardingDocumentTypeLabel,
+  ONBOARDING_STATUSES,
+  onboardingStatusLabel,
+  type OnboardingApplication,
+  type OnboardingStatus,
+} from '../types/OnboardingApplication'
 
 function formatDate(iso: string) {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function StatusPill({ status }: { status: OnboardingStatus }) {
@@ -97,6 +109,37 @@ function ReviewPanel({ application, onSave, onClose }: { application: Onboarding
           </span>
         </div>
       )}
+
+      <div>
+        <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>
+          Documents {application.documents.length > 0 ? `(${application.documents.length})` : ''}
+        </label>
+        {application.documents.length === 0 ? (
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#94A3B8' }}>
+            {application.status === 'info_required'
+              ? 'Waiting on the applicant to upload documents via Track Application.'
+              : 'No documents uploaded yet.'}
+          </p>
+        ) : (
+          <Stack gap={6}>
+            {application.documents.map(doc => (
+              <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: '#FAFAF8', border: '1px solid #E4E2DC' }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.originalFilename}</p>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94A3B8', marginTop: 2 }}>{onboardingDocumentTypeLabel(doc.documentType)} · {formatBytes(doc.sizeBytes)} · {formatDate(doc.createdAt)}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { void Promise.resolve(OnboardingService.downloadDocument(application.id, doc.id, doc.originalFilename)) }}
+                >
+                  Download
+                </Button>
+              </div>
+            ))}
+          </Stack>
+        )}
+      </div>
 
       <div>
         <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 6, display: 'block' }}>Status</label>

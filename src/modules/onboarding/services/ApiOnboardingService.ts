@@ -3,12 +3,16 @@
  * `submit` hits the unauthenticated public endpoint and never touches the cache.
  */
 import type {
+  LookupOnboardingApplicationInput,
   OnboardingApplication,
+  OnboardingApplicationSummary,
+  OnboardingDocument,
   SubmitOnboardingApplicationInput,
   UpdateOnboardingApplicationInput,
+  UploadOnboardingDocumentInput,
 } from '../types/OnboardingApplication'
 import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
-import { api } from '../../../data/http'
+import { api, apiFiles, saveBlob } from '../../../data/http'
 
 class ApiOnboardingServiceImpl {
   private cache: OnboardingApplication[] = []
@@ -29,6 +33,25 @@ class ApiOnboardingServiceImpl {
 
   async submit(input: SubmitOnboardingApplicationInput): Promise<OnboardingApplication> {
     return api.post<OnboardingApplication>('/public/onboarding/applications', input)
+  }
+
+  async lookup(input: LookupOnboardingApplicationInput): Promise<OnboardingApplicationSummary> {
+    return api.post<OnboardingApplicationSummary>('/public/onboarding/applications/lookup', input)
+  }
+
+  async uploadDocument(input: UploadOnboardingDocumentInput): Promise<OnboardingDocument> {
+    const form = new FormData()
+    form.append('document_type', input.documentType)
+    form.append('file', input.file)
+    return apiFiles.postForm<OnboardingDocument>(
+      `/public/onboarding/applications/${input.applicationId}/documents`,
+      form,
+    )
+  }
+
+  async downloadDocument(applicationId: string, documentId: string, filename: string): Promise<void> {
+    const blob = await apiFiles.getBlob(`/onboarding/applications/${applicationId}/documents/${documentId}/download`)
+    saveBlob(blob, filename)
   }
 
   async update(input: UpdateOnboardingApplicationInput): Promise<OnboardingApplication | undefined> {

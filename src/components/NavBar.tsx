@@ -5,7 +5,7 @@ import { useFeatures } from '../config/FeatureContext'
 import type { FeatureKey } from '../config/features'
 import { Button, Row } from './ui'
 
-type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote' | 'track'
 
 interface NavBarProps {
   current: Page
@@ -114,6 +114,11 @@ export default function NavBar({ current, onNavigate, onAdminClick, onMobileClic
               Admin ↗
             </button>
           )}
+          {isEnabled('onboarding') && (
+            <Button variant="ghost" size="sm" onClick={() => onNavigate('track')}>
+              Track Application
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={() => {}}>
             Log In
           </Button>
@@ -139,10 +144,15 @@ export default function NavBar({ current, onNavigate, onAdminClick, onMobileClic
             </button>
           ))}
           {/* Full-width CTA uses al-btn-full which sets display:flex;width:100% */}
-          <div style={{ marginTop: 14 }}>
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Button variant="primary" size="lg" full onClick={() => { onNavigate('product'); setMobileOpen(false) }}>
               Get Instant Quote
             </Button>
+            {isEnabled('onboarding') && (
+              <Button variant="outline" size="lg" full onClick={() => { onNavigate('track'); setMobileOpen(false) }}>
+                Track Application
+              </Button>
+            )}
           </div>
         </div>
       )}

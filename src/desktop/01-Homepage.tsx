@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Icon } from '../icons'
 import { useBranding } from '../config/BrandingContext'
 
-type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote' | 'track'
 interface Props { onNavigate: (p: Page) => void }
 
 // ── Animated counter ──────────────────────────────────────────────────────────

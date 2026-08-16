@@ -45,8 +45,11 @@ services:
       ENABLE_DOCS: ${ENABLE_DOCS:-true}
       RUN_MIGRATIONS_ON_STARTUP: ${RUN_MIGRATIONS_ON_STARTUP:-true}
       GRACEFUL_SHUTDOWN_SECONDS: ${GRACEFUL_SHUTDOWN_SECONDS:-30}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     ports:
       - "${API_PORT:-8000}:8000"
+    volumes:
+      - insurtech_uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/ready"]
       interval: 15s
@@ -72,3 +75,4 @@ services:
 
 volumes:
   insurtech_pgdata:
+  insurtech_uploads:

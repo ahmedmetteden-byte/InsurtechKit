@@ -16,7 +16,7 @@ import ClaimsPage  from './desktop/03-Claims-Process'
 import ContactPage from './desktop/04-Contact-Agent-Finder'
 
 // Onboarding — public quote/application form
-import { PublicOnboardingForm } from './modules/onboarding'
+import { PublicOnboardingForm, TrackApplicationPage } from './modules/onboarding'
 
 // Admin screens
 import AdminDashboard from './admin/AdminDashboard'
@@ -28,7 +28,7 @@ import MobileGetQuote      from './mobile/03-Get-Quote'
 import MobilePolicyDetails from './mobile/04-Policy-Details'
 import MobileClaimsSubmit  from './mobile/05-Claims-Submit'
 
-type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote' | 'track'
 type MobileScreen = 'onboarding' | 'dashboard' | 'quote' | 'policy' | 'claims'
 
 const pageFeature: Partial<Record<Page, FeatureKey>> = {
@@ -36,6 +36,7 @@ const pageFeature: Partial<Record<Page, FeatureKey>> = {
   claims: 'claims',
   contact: 'agents',
   quote: 'onboarding',
+  track: 'onboarding',
 }
 
 const mobileScreens: { id: MobileScreen; label: string; feature?: FeatureKey }[] = [
@@ -150,6 +151,7 @@ export default function App() {
         {page === 'claims'  && isEnabled('claims') && <ClaimsPage  onNavigate={navigate} />}
         {page === 'contact' && isEnabled('agents') && <ContactPage onNavigate={navigate} />}
         {page === 'quote'   && isEnabled('onboarding') && <PublicOnboardingForm initialCategory={quoteCategory} initialMessage={quoteMessage} onBackToHome={() => navigate('home')} />}
+        {page === 'track'   && isEnabled('onboarding') && <TrackApplicationPage onBackToHome={() => navigate('home')} />}
       </main>
       <Footer onNavigate={navigate} />
     </div>

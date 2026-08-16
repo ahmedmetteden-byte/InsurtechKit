@@ -8,6 +8,7 @@ from app.models.entities import (
     FeatureFlags,
     Integration,
     OnboardingApplication,
+    OnboardingDocument,
     Permission,
     Policy,
     Product,
@@ -57,6 +58,18 @@ class OnboardingApplicationRepository(BaseRepository[OnboardingApplication]):
         return self.db.scalars(
             select(OnboardingApplication).where(OnboardingApplication.reference == reference)
         ).first()
+
+
+class OnboardingDocumentRepository(BaseRepository[OnboardingDocument]):
+    model = OnboardingDocument
+    id_prefix = "doc"
+
+    def get_by_application(self, application_id: str) -> list[OnboardingDocument]:
+        return list(
+            self.db.scalars(
+                select(OnboardingDocument).where(OnboardingDocument.application_id == application_id)
+            ).all()
+        )
 
 
 class RoleRepository(BaseRepository[Role]):

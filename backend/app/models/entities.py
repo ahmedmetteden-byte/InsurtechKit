@@ -104,6 +104,19 @@ class OnboardingApplication(StringIdMixin, TimestampMixin, Base):
     )
 
 
+class OnboardingDocument(StringIdMixin, TimestampMixin, Base):
+    __tablename__ = "onboarding_documents"
+
+    application_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("onboarding_applications.id"), nullable=False, index=True
+    )
+    document_type: Mapped[str] = mapped_column(String(32), default="other", nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    storage_path: Mapped[str] = mapped_column(String(512), nullable=False)
+
+
 class Role(StringIdMixin, TimestampMixin, Base):
     __tablename__ = "roles"
 

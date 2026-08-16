@@ -115,6 +115,18 @@ def onboarding_application_to_dict(a: Any) -> dict:
     }
 
 
+def onboarding_document_to_dict(d: Any) -> dict:
+    return {
+        "id": d.id,
+        "applicationId": d.application_id,
+        "documentType": d.document_type,
+        "originalFilename": d.original_filename,
+        "contentType": d.content_type,
+        "sizeBytes": d.size_bytes,
+        **_ts(d),
+    }
+
+
 def role_to_dict(r: Any) -> dict:
     return {
         "id": r.id,

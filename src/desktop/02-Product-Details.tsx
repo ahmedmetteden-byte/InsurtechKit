@@ -3,7 +3,7 @@ import { Icon } from '../icons'
 import { useBranding } from '../config/BrandingContext'
 import type { BrandingConfig } from '../config/branding'
 
-type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote' | 'track'
 
 /** Snapshot of the calculator's indicative quote, carried into the onboarding form. */
 export interface QuoteSummary {

@@ -3,8 +3,8 @@ import { Icon } from '../icons'
 import { useBranding } from '../config/BrandingContext'
 import type { BrandingConfig } from '../config/branding'
 
-type Page = 'home' | 'product' | 'claims' | 'contact'
-interface Props { onNavigate: (p: Page) => void }
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
+interface Props { onNavigate: (p: Page) => void; onRequestQuote?: (category?: string) => void }
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 function Eyebrow({ children }: { children: string }) {
@@ -274,7 +274,7 @@ function FAQ({ color }: { color: string }) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export default function ProductPage({ onNavigate }: Props) {
+export default function ProductPage({ onNavigate, onRequestQuote }: Props) {
   const [activeProduct, setActiveProduct] = useState('motor')
   const { branding } = useBranding()
   const prod = products.find(p => p.id === activeProduct)!
@@ -401,7 +401,7 @@ export default function ProductPage({ onNavigate }: Props) {
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: '#475569', lineHeight: 1.6 }}>Start your {prod.fullLabel.toLowerCase()} quote now — takes under 2 minutes.</p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
-            <button style={{ padding: '14px 28px', borderRadius: 12, background: prod.color, color: 'white', fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: `0 4px 16px ${prod.color}40` }}>
+            <button onClick={() => onRequestQuote?.(prod.id)} style={{ padding: '14px 28px', borderRadius: 12, background: prod.color, color: 'white', fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: `0 4px 16px ${prod.color}40` }}>
               Get Instant Quote
             </button>
             <button onClick={() => onNavigate('contact')} style={{ padding: '14px 20px', borderRadius: 12, border: `1.5px solid ${prod.border}`, background: 'white', fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: prod.color, cursor: 'pointer' }}>

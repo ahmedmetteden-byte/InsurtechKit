@@ -22,12 +22,16 @@ import { ApiUserService } from '../modules/users/services/ApiUserService'
 import { IntegrationService as MemoryIntegrationService } from '../modules/integrations/services/IntegrationService'
 import { ApiIntegrationService } from '../modules/integrations/services/ApiIntegrationService'
 
+import { OnboardingService as MemoryOnboardingService } from '../modules/onboarding/services/OnboardingService'
+import { ApiOnboardingService } from '../modules/onboarding/services/ApiOnboardingService'
+
 export const ProductService = isApiMode ? ApiProductService : MemoryProductService
 export const CustomerService = isApiMode ? ApiCustomerService : MemoryCustomerService
 export const PolicyService = isApiMode ? ApiPolicyService : MemoryPolicyService
 export const ClaimService = isApiMode ? ApiClaimService : MemoryClaimService
 export const UserService = isApiMode ? ApiUserService : MemoryUserService
 export const IntegrationService = isApiMode ? ApiIntegrationService : MemoryIntegrationService
+export const OnboardingService = isApiMode ? ApiOnboardingService : MemoryOnboardingService
 
 /** Hydrate API caches before rendering admin data screens. No-op in memory mode. */
 export async function hydrateApiData(): Promise<void> {
@@ -39,5 +43,6 @@ export async function hydrateApiData(): Promise<void> {
     ApiClaimService.load(),
     ApiUserService.load(),
     ApiIntegrationService.load(),
+    ApiOnboardingService.load(),
   ])
 }

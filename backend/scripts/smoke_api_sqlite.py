@@ -135,6 +135,72 @@ forbidden = client.post(
 print("finance create product", forbidden.status_code)
 assert forbidden.status_code == 403
 
+# ── Onboarding: public catalogue + application submission + staff review ──
+
+public_products = client.get("/api/v1/public/products")
+print("public products", public_products.status_code, len(public_products.json()))
+assert public_products.status_code == 200
+assert all(p["active"] for p in public_products.json())
+seed_product_id = public_products.json()[0]["id"]
+
+no_consent = client.post(
+    "/api/v1/public/onboarding/applications",
+    json={
+        "productId": seed_product_id,
+        "applicantFirstName": "Chinwe",
+        "applicantLastName": "Obi",
+        "applicantEmail": "chinwe.obi@example.com",
+        "applicantPhone": "+234 800 000 0000",
+        "message": "Interested in cover",
+        "consent": False,
+    },
+)
+print("onboarding without consent", no_consent.status_code)
+assert no_consent.status_code == 422
+
+submitted = client.post(
+    "/api/v1/public/onboarding/applications",
+    json={
+        "productId": seed_product_id,
+        "applicantFirstName": "Chinwe",
+        "applicantLastName": "Obi",
+        "applicantEmail": "chinwe.obi@example.com",
+        "applicantPhone": "+234 800 000 0000",
+        "message": "Interested in cover",
+        "consent": True,
+    },
+)
+print("onboarding submit", submitted.status_code, submitted.json().get("reference"))
+assert submitted.status_code == 201
+application_id = submitted.json()["id"]
+assert submitted.json()["status"] == "submitted"
+
+onboarding_unauth = client.get("/api/v1/onboarding/applications")
+print("onboarding list unauth", onboarding_unauth.status_code)
+assert onboarding_unauth.status_code == 401
+
+onboarding_forbidden = client.put(
+    f"/api/v1/onboarding/applications/{application_id}",
+    headers=finance_headers,
+    json={"status": "in_review"},
+)
+print("onboarding review forbidden", onboarding_forbidden.status_code)
+assert onboarding_forbidden.status_code == 403
+
+onboarding_list = client.get("/api/v1/onboarding/applications", headers=headers)
+print("onboarding list staff", onboarding_list.status_code, len(onboarding_list.json()))
+assert onboarding_list.status_code == 200
+assert any(a["id"] == application_id for a in onboarding_list.json())
+
+onboarding_review = client.put(
+    f"/api/v1/onboarding/applications/{application_id}",
+    headers=headers,
+    json={"status": "in_review", "reviewNotes": "Awaiting KYC documents"},
+)
+print("onboarding review", onboarding_review.status_code, onboarding_review.json().get("status"))
+assert onboarding_review.status_code == 200
+assert onboarding_review.json()["status"] == "in_review"
+
 refreshed = client.post("/api/v1/auth/refresh", json={"refreshToken": refresh})
 print("refresh", refreshed.status_code)
 assert refreshed.status_code == 200

@@ -27,6 +27,8 @@ PERMISSIONS = [
     ("claims.create", "Create claims"),
     ("claims.edit", "Edit claims"),
     ("claims.approve", "Approve claims"),
+    ("onboarding.view", "View onboarding applications"),
+    ("onboarding.review", "Review and decide onboarding applications"),
     ("reports.view", "View reports"),
     ("settings.manage", "Manage settings"),
     ("users.manage", "Manage users"),
@@ -40,11 +42,13 @@ ROLES = [
         "dashboard.view", "products.view", "products.create", "products.edit",
         "customers.view", "customers.create", "customers.edit",
         "policies.view", "policies.create", "policies.edit",
-        "claims.view", "claims.create", "claims.edit", "reports.view",
+        "claims.view", "claims.create", "claims.edit",
+        "onboarding.view", "onboarding.review", "reports.view",
     ]),
     ("role-underwriter", "Underwriter", "Create and maintain products and policies; view customers.", [
         "dashboard.view", "products.view", "products.create", "products.edit",
-        "customers.view", "policies.view", "policies.create", "policies.edit", "reports.view",
+        "customers.view", "policies.view", "policies.create", "policies.edit",
+        "onboarding.view", "onboarding.review", "reports.view",
     ]),
     ("role-claims", "Claims Officer", "Manage the claims register including approvals.", [
         "dashboard.view", "customers.view", "policies.view",
@@ -52,7 +56,7 @@ ROLES = [
     ]),
     ("role-cs", "Customer Service", "Serve policyholders.", [
         "dashboard.view", "products.view", "customers.view", "customers.create", "customers.edit",
-        "policies.view", "policies.create", "claims.view", "claims.create",
+        "policies.view", "policies.create", "claims.view", "claims.create", "onboarding.view",
     ]),
     ("role-finance", "Finance Officer", "View premiums, policies, claims amounts, and reports.", [
         "dashboard.view", "customers.view", "policies.view", "claims.view", "reports.view",
@@ -96,6 +100,7 @@ DEFAULT_FLAGS = {
     "products": True,
     "policies": True,
     "claims": True,
+    "onboarding": True,
     "users": True,
     "reports": True,
     "integrations": True,

@@ -15,6 +15,9 @@ import ProductPage from './desktop/02-Product-Details'
 import ClaimsPage  from './desktop/03-Claims-Process'
 import ContactPage from './desktop/04-Contact-Agent-Finder'
 
+// Onboarding — public quote/application form
+import { PublicOnboardingForm } from './modules/onboarding'
+
 // Admin screens
 import AdminDashboard from './admin/AdminDashboard'
 
@@ -25,13 +28,14 @@ import MobileGetQuote      from './mobile/03-Get-Quote'
 import MobilePolicyDetails from './mobile/04-Policy-Details'
 import MobileClaimsSubmit  from './mobile/05-Claims-Submit'
 
-type Page = 'home' | 'product' | 'claims' | 'contact'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
 type MobileScreen = 'onboarding' | 'dashboard' | 'quote' | 'policy' | 'claims'
 
 const pageFeature: Partial<Record<Page, FeatureKey>> = {
   product: 'products',
   claims: 'claims',
   contact: 'agents',
+  quote: 'onboarding',
 }
 
 const mobileScreens: { id: MobileScreen; label: string; feature?: FeatureKey }[] = [
@@ -46,6 +50,7 @@ export default function App() {
   // Start on the cover page; buyer clicks "Open Kit" to enter the website
   const [showCover, setShowCover] = useState(true)
   const [page, setPage] = useState<Page>('home')
+  const [quoteCategory, setQuoteCategory] = useState<string | undefined>()
   const [admin, setAdmin] = useState(false)
   const [mobile, setMobile] = useState(false)
   const [mobileScreen, setMobileScreen] = useState<MobileScreen>('onboarding')
@@ -76,6 +81,11 @@ export default function App() {
 
   const exitAdmin = () => {
     setAdmin(false)
+  }
+
+  const requestQuote = (category?: string) => {
+    setQuoteCategory(category)
+    navigate('quote')
   }
 
   // ── Admin mode — full-screen, no nav/footer
@@ -130,9 +140,10 @@ export default function App() {
       <NavBar current={page} onNavigate={navigate} onAdminClick={() => setAdmin(true)} onMobileClick={() => setMobile(true)} />
       <main>
         {page === 'home'    && <HomePage    onNavigate={navigate} />}
-        {page === 'product' && isEnabled('products') && <ProductPage onNavigate={navigate} />}
+        {page === 'product' && isEnabled('products') && <ProductPage onNavigate={navigate} onRequestQuote={requestQuote} />}
         {page === 'claims'  && isEnabled('claims') && <ClaimsPage  onNavigate={navigate} />}
         {page === 'contact' && isEnabled('agents') && <ContactPage onNavigate={navigate} />}
+        {page === 'quote'   && isEnabled('onboarding') && <PublicOnboardingForm initialCategory={quoteCategory} onBackToHome={() => navigate('home')} />}
       </main>
       <Footer onNavigate={navigate} />
     </div>

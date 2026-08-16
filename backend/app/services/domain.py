@@ -1,5 +1,8 @@
 """Service layer — business logic; repositories handle persistence only."""
+from __future__ import annotations
+
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -12,6 +15,7 @@ from app.models.entities import (
     Customer,
     FeatureFlags,
     Integration,
+    OnboardingApplication,
     Policy,
     Product,
     User,
@@ -22,6 +26,7 @@ from app.repositories import (
     CustomerRepository,
     FeatureFlagsRepository,
     IntegrationRepository,
+    OnboardingApplicationRepository,
     PermissionRepository,
     PolicyRepository,
     ProductRepository,
@@ -37,6 +42,8 @@ from app.schemas.entities import (
     FeatureFlagsUpdate,
     IntegrationCreate,
     IntegrationUpdate,
+    OnboardingApplicationCreate,
+    OnboardingApplicationStatusUpdate,
     PolicyCreate,
     PolicyUpdate,
     ProductCreate,
@@ -50,12 +57,15 @@ from app.utils.mappers import (
     customer_to_dict,
     flags_to_dict,
     integration_to_dict,
+    onboarding_application_to_dict,
     permission_to_dict,
     policy_to_dict,
     product_to_dict,
     role_to_dict,
     user_to_dict,
 )
+
+ONBOARDING_STATUSES = {"submitted", "in_review", "info_required", "approved", "declined"}
 
 
 def _now_iso() -> str:
@@ -68,6 +78,9 @@ class ProductService:
 
     def list(self) -> list[dict]:
         return [product_to_dict(p) for p in self.repo.get_all()]
+
+    def list_active(self) -> list[dict]:
+        return [product_to_dict(p) for p in self.repo.get_all() if p.active]
 
     def get(self, id: str) -> dict:
         p = self.repo.get_by_id(id)
@@ -266,6 +279,61 @@ class ClaimService:
     def delete(self, id: str) -> None:
         if not self.repo.delete(id):
             raise HTTPException(status_code=404, detail="Claim not found")
+
+
+class OnboardingService:
+    def __init__(self, db: Session):
+        self.repo = OnboardingApplicationRepository(db)
+        self.products = ProductRepository(db)
+
+    def list(self) -> list[dict]:
+        return [onboarding_application_to_dict(a) for a in self.repo.get_all()]
+
+    def get(self, id: str) -> dict:
+        a = self.repo.get_by_id(id)
+        if not a:
+            raise HTTPException(status_code=404, detail="Application not found")
+        return onboarding_application_to_dict(a)
+
+    def submit(self, data: OnboardingApplicationCreate) -> dict:
+        if not data.consent:
+            raise HTTPException(status_code=422, detail="Consent is required to submit an application")
+        product = self.products.get_by_id(data.product_id)
+        if not product or not product.active:
+            raise HTTPException(status_code=400, detail="Invalid or inactive productId")
+        entity = OnboardingApplication(
+            id=self.repo.new_id(),
+            reference=self._new_reference(),
+            product_id=data.product_id,
+            product_name=product.name,
+            applicant_first_name=data.applicant_first_name,
+            applicant_last_name=data.applicant_last_name,
+            applicant_email=data.applicant_email.strip().lower(),
+            applicant_phone=data.applicant_phone,
+            message=data.message,
+            consent=True,
+            consent_at=_now_iso(),
+            status="submitted",
+        )
+        return onboarding_application_to_dict(self.repo.add(entity))
+
+    def update_status(self, id: str, data: OnboardingApplicationStatusUpdate) -> dict:
+        entity = self.repo.get_by_id(id)
+        if not entity:
+            raise HTTPException(status_code=404, detail="Application not found")
+        payload = data.model_dump(exclude_unset=True)
+        if "status" in payload and payload["status"] not in ONBOARDING_STATUSES:
+            raise HTTPException(status_code=422, detail="Invalid status")
+        for field, value in payload.items():
+            setattr(entity, field, value)
+        return onboarding_application_to_dict(self.repo.save(entity))
+
+    def _new_reference(self) -> str:
+        for _ in range(5):
+            candidate = f"APP-{uuid4().hex[:8].upper()}"
+            if not self.repo.get_by_reference(candidate):
+                return candidate
+        raise HTTPException(status_code=500, detail="Could not generate a unique application reference")
 
 
 class UserService:

@@ -12,6 +12,7 @@ import { ProductManagement } from '../modules/products'
 import { CustomerManagement } from '../modules/customers'
 import { PolicyManagement } from '../modules/policies'
 import { ClaimManagement } from '../modules/claims'
+import { OnboardingQueue } from '../modules/onboarding'
 import { ReportsDashboard } from '../modules/reports'
 import { IntegrationManagement } from '../modules/integrations'
 import { UserManagement } from '../modules/users'
@@ -58,10 +59,11 @@ const T = {
 // â”€â”€ Chart data is derived live in OverviewSection via dashboardData helpers â”€â”€â”€
 
 // â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-type AdminView = 'overview' | 'claims' | 'policyholders' | 'premiums' | 'products' | 'users' | 'reports' | 'integrations' | 'settings'
+type AdminView = 'overview' | 'claims' | 'onboarding' | 'policyholders' | 'premiums' | 'products' | 'users' | 'reports' | 'integrations' | 'settings'
 
 const navItems: { id: AdminView; label: string; icon: React.ReactNode; badge?: number; feature: FeatureKey }[] = [
   { id: 'overview', label: 'Overview', icon: <OverviewIcon />, feature: 'dashboard' },
+  { id: 'onboarding', label: 'Onboarding', icon: <OnboardingIcon />, feature: 'onboarding' },
   { id: 'claims', label: 'Claims', icon: <ClaimsIcon />, feature: 'claims' },
   { id: 'policyholders', label: 'Policyholders', icon: <PeopleIcon />, feature: 'customers' },
   { id: 'premiums', label: 'Premiums', icon: <PremiumIcon />, feature: 'policies' },
@@ -74,6 +76,7 @@ const navItems: { id: AdminView; label: string; icon: React.ReactNode; badge?: n
 
 function OverviewIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg> }
 function ClaimsIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M4 4h12a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M7 9h6M7 12h4"/></svg> }
+function OnboardingIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M4 3h9l3 3v11a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M13 3v3h3M7 12l2 2 4-4"/></svg> }
 function PeopleIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.314 2.686-5 6-5s6 1.686 6 5"/><circle cx="15" cy="8" r="2"/><path d="M17 17c0-2-1.3-3.5-3-4"/></svg> }
 function PremiumIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M10 2L3 7v11h14V7L10 2z"/><path d="M10 12v3M10 8v2"/></svg> }
 function ReportIcon() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}><path d="M4 2h8l4 4v12a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M12 2v4h4M7 10h6M7 13h4"/></svg> }
@@ -621,6 +624,7 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
         {/* Content */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
           {activeView === 'overview' && (isEnabled('dashboard') || isEnabled('analytics')) && <OverviewSection onNavigate={setView} />}
+          {activeView === 'onboarding' && isEnabled('onboarding') && <OnboardingQueue />}
           {activeView === 'claims' && isEnabled('claims') && <ClaimManagement />}
           {activeView === 'policyholders' && isEnabled('customers') && <CustomerManagement />}
           {activeView === 'premiums' && isEnabled('policies') && <PolicyManagement />}

@@ -10,6 +10,7 @@ from app.services.domain import (
     CustomerService,
     FeatureFlagsService,
     IntegrationService,
+    OnboardingService,
     PolicyService,
     ProductService,
     UserService,
@@ -46,3 +47,7 @@ def get_branding_service(db: Session = Depends(get_db)) -> Generator[BrandingSer
 
 def get_feature_flags_service(db: Session = Depends(get_db)) -> Generator[FeatureFlagsService, None, None]:
     yield FeatureFlagsService(db)
+
+
+def get_onboarding_service(db: Session = Depends(get_db)) -> Generator[OnboardingService, None, None]:
+    yield OnboardingService(db)

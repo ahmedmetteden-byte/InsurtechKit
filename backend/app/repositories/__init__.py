@@ -7,6 +7,7 @@ from app.models.entities import (
     Customer,
     FeatureFlags,
     Integration,
+    OnboardingApplication,
     Permission,
     Policy,
     Product,
@@ -46,6 +47,16 @@ class ClaimRepository(BaseRepository[Claim]):
 
     def get_by_number(self, number: str) -> Claim | None:
         return self.db.scalars(select(Claim).where(Claim.claim_number == number)).first()
+
+
+class OnboardingApplicationRepository(BaseRepository[OnboardingApplication]):
+    model = OnboardingApplication
+    id_prefix = "app"
+
+    def get_by_reference(self, reference: str) -> OnboardingApplication | None:
+        return self.db.scalars(
+            select(OnboardingApplication).where(OnboardingApplication.reference == reference)
+        ).first()
 
 
 class RoleRepository(BaseRepository[Role]):

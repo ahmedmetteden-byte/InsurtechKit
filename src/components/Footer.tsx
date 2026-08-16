@@ -2,7 +2,7 @@ import { Icon } from '../icons'
 import { useBranding } from '../config/BrandingContext'
 import { Button, Row, Stack } from './ui'
 
-type Page = 'home' | 'product' | 'claims' | 'contact'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
 
 export default function Footer({ onNavigate }: { onNavigate: (p: Page) => void }) {
   const { branding } = useBranding()

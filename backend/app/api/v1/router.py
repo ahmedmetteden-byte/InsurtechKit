@@ -8,6 +8,7 @@ from app.dependencies.services import (
     get_customer_service,
     get_feature_flags_service,
     get_integration_service,
+    get_onboarding_service,
     get_policy_service,
     get_product_service,
     get_user_service,
@@ -29,6 +30,9 @@ from app.schemas.entities import (
     IntegrationRead,
     IntegrationUpdate,
     MessageResponse,
+    OnboardingApplicationCreate,
+    OnboardingApplicationRead,
+    OnboardingApplicationStatusUpdate,
     PermissionRead,
     PolicyCreate,
     PolicyRead,
@@ -48,6 +52,7 @@ from app.services.domain import (
     CustomerService,
     FeatureFlagsService,
     IntegrationService,
+    OnboardingService,
     PolicyService,
     ProductService,
     UserService,
@@ -258,6 +263,57 @@ def delete_claim(
 ):
     service.delete(id)
     return {"message": "Claim deleted"}
+
+
+# ── Public (no auth) ──────────────────────────────────────────────────────
+# Customer onboarding starts before any account exists — catalogue browsing
+# and application submission must work without a session.
+
+@router.get("/public/products", response_model=list[ProductRead], tags=["Public"])
+def list_public_products(service: ProductService = Depends(get_product_service)):
+    return service.list_active()
+
+
+@router.post(
+    "/public/onboarding/applications",
+    response_model=OnboardingApplicationRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Public"],
+)
+def submit_onboarding_application(
+    body: OnboardingApplicationCreate,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.submit(body)
+
+
+# ── Onboarding (staff review) ─────────────────────────────────────────────
+
+@router.get("/onboarding/applications", response_model=list[OnboardingApplicationRead], tags=["Onboarding"])
+def list_onboarding_applications(
+    _: User = Depends(require_permission("onboarding.view")),
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.list()
+
+
+@router.get("/onboarding/applications/{id}", response_model=OnboardingApplicationRead, tags=["Onboarding"])
+def get_onboarding_application(
+    id: str,
+    _: User = Depends(require_permission("onboarding.view")),
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.get(id)
+
+
+@router.put("/onboarding/applications/{id}", response_model=OnboardingApplicationRead, tags=["Onboarding"])
+def update_onboarding_application(
+    id: str,
+    body: OnboardingApplicationStatusUpdate,
+    _: User = Depends(require_permission("onboarding.review")),
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    return service.update_status(id, body)
 
 
 # ── Users / Roles ──────────────────────────────────────────────────────────

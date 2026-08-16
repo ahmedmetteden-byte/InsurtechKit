@@ -5,7 +5,7 @@ import { useFeatures } from '../config/FeatureContext'
 import type { FeatureKey } from '../config/features'
 import { Button, Row } from './ui'
 
-type Page = 'home' | 'product' | 'claims' | 'contact'
+type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
 
 interface NavBarProps {
   current: Page

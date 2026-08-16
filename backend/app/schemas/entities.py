@@ -203,6 +203,41 @@ class ClaimRead(ClaimBase):
     updated_at: str
 
 
+# ── Onboarding Applications ──────────────────────────────────────────────────
+
+class OnboardingApplicationCreate(APIModel):
+    product_id: str
+    applicant_first_name: str
+    applicant_last_name: str
+    applicant_email: str
+    applicant_phone: str = ""
+    message: str = ""
+    consent: bool = False
+
+
+class OnboardingApplicationStatusUpdate(APIModel):
+    status: str | None = None
+    review_notes: str | None = None
+
+
+class OnboardingApplicationRead(APIModel):
+    id: str
+    reference: str
+    product_id: str
+    product_name: str
+    applicant_first_name: str
+    applicant_last_name: str
+    applicant_email: str
+    applicant_phone: str
+    message: str
+    consent: bool
+    consent_at: str
+    status: str
+    review_notes: str
+    created_at: str
+    updated_at: str
+
+
 # ── Roles / Users ──────────────────────────────────────────────────────────
 
 class RoleRead(APIModel):

@@ -84,6 +84,23 @@ class Claim(StringIdMixin, TimestampMixin, Base):
     notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
 
 
+class OnboardingApplication(StringIdMixin, TimestampMixin, Base):
+    __tablename__ = "onboarding_applications"
+
+    reference: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    product_id: Mapped[str] = mapped_column(String(64), ForeignKey("products.id"), nullable=False, index=True)
+    product_name: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    applicant_first_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    applicant_last_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    applicant_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    applicant_phone: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    message: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    consent_at: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="submitted", nullable=False)
+    review_notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+
 class Role(StringIdMixin, TimestampMixin, Base):
     __tablename__ = "roles"
 

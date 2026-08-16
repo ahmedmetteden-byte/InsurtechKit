@@ -95,6 +95,25 @@ def claim_to_dict(c: Any) -> dict:
     }
 
 
+def onboarding_application_to_dict(a: Any) -> dict:
+    return {
+        "id": a.id,
+        "reference": a.reference,
+        "productId": a.product_id,
+        "productName": a.product_name,
+        "applicantFirstName": a.applicant_first_name,
+        "applicantLastName": a.applicant_last_name,
+        "applicantEmail": a.applicant_email,
+        "applicantPhone": a.applicant_phone,
+        "message": a.message,
+        "consent": a.consent,
+        "consentAt": a.consent_at,
+        "status": a.status,
+        "reviewNotes": a.review_notes,
+        **_ts(a),
+    }
+
+
 def role_to_dict(r: Any) -> dict:
     return {
         "id": r.id,

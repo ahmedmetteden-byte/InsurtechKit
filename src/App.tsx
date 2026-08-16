@@ -11,7 +11,7 @@ import Cover from './desktop/00-Cover'
 
 // Desktop / Website screens
 import HomePage    from './desktop/01-Homepage'
-import ProductPage from './desktop/02-Product-Details'
+import ProductPage, { type QuoteSummary } from './desktop/02-Product-Details'
 import ClaimsPage  from './desktop/03-Claims-Process'
 import ContactPage from './desktop/04-Contact-Agent-Finder'
 
@@ -51,6 +51,7 @@ export default function App() {
   const [showCover, setShowCover] = useState(true)
   const [page, setPage] = useState<Page>('home')
   const [quoteCategory, setQuoteCategory] = useState<string | undefined>()
+  const [quoteSummary, setQuoteSummary] = useState<QuoteSummary | undefined>()
   const [admin, setAdmin] = useState(false)
   const [mobile, setMobile] = useState(false)
   const [mobileScreen, setMobileScreen] = useState<MobileScreen>('onboarding')
@@ -83,10 +84,15 @@ export default function App() {
     setAdmin(false)
   }
 
-  const requestQuote = (category?: string) => {
+  const requestQuote = (category?: string, quote?: QuoteSummary) => {
     setQuoteCategory(category)
+    setQuoteSummary(quote)
     navigate('quote')
   }
+
+  const quoteMessage = quoteSummary
+    ? `Indicative quote from the calculator: ${quoteSummary.coverType} cover, ₦${quoteSummary.value.toLocaleString()} value, ${quoteSummary.state}, ~₦${quoteSummary.annualPremium.toLocaleString()}/year (₦${quoteSummary.monthlyPremium.toLocaleString()}/month).`
+    : undefined
 
   // ── Admin mode — full-screen, no nav/footer
   if (admin) {
@@ -143,7 +149,7 @@ export default function App() {
         {page === 'product' && isEnabled('products') && <ProductPage onNavigate={navigate} onRequestQuote={requestQuote} />}
         {page === 'claims'  && isEnabled('claims') && <ClaimsPage  onNavigate={navigate} />}
         {page === 'contact' && isEnabled('agents') && <ContactPage onNavigate={navigate} />}
-        {page === 'quote'   && isEnabled('onboarding') && <PublicOnboardingForm initialCategory={quoteCategory} onBackToHome={() => navigate('home')} />}
+        {page === 'quote'   && isEnabled('onboarding') && <PublicOnboardingForm initialCategory={quoteCategory} initialMessage={quoteMessage} onBackToHome={() => navigate('home')} />}
       </main>
       <Footer onNavigate={navigate} />
     </div>

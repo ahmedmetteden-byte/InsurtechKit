@@ -23,6 +23,8 @@ export interface OnboardingApplication {
   consentAt: string
   status: OnboardingStatus
   reviewNotes: string
+  /** Set once the application is approved and converted into a Customer record. */
+  customerId: string
   createdAt: string
   updatedAt: string
 }

@@ -200,6 +200,30 @@ onboarding_review = client.put(
 print("onboarding review", onboarding_review.status_code, onboarding_review.json().get("status"))
 assert onboarding_review.status_code == 200
 assert onboarding_review.json()["status"] == "in_review"
+assert onboarding_review.json()["customerId"] == ""
+
+onboarding_approved = client.put(
+    f"/api/v1/onboarding/applications/{application_id}",
+    headers=headers,
+    json={"status": "approved"},
+)
+print("onboarding approve", onboarding_approved.status_code, onboarding_approved.json().get("customerId"))
+assert onboarding_approved.status_code == 200
+converted_customer_id = onboarding_approved.json()["customerId"]
+assert converted_customer_id
+
+converted_customer = client.get(f"/api/v1/customers/{converted_customer_id}", headers=headers)
+print("converted customer", converted_customer.status_code, converted_customer.json().get("email"))
+assert converted_customer.status_code == 200
+assert converted_customer.json()["email"] == "chinwe.obi@example.com"
+
+onboarding_reapproved = client.put(
+    f"/api/v1/onboarding/applications/{application_id}",
+    headers=headers,
+    json={"status": "approved", "reviewNotes": "Re-confirmed"},
+)
+print("onboarding re-approve idempotent", onboarding_reapproved.status_code, onboarding_reapproved.json().get("customerId"))
+assert onboarding_reapproved.json()["customerId"] == converted_customer_id
 
 refreshed = client.post("/api/v1/auth/refresh", json={"refreshToken": refresh})
 print("refresh", refreshed.status_code)

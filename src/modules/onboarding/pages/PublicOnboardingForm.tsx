@@ -7,6 +7,8 @@ import type { OnboardingApplication } from '../types/OnboardingApplication'
 interface Props {
   /** Product category to preselect, e.g. passed from the marketing Product page CTA. */
   initialCategory?: string
+  /** Prefilled message, e.g. the calculator's indicative quote summary. */
+  initialMessage?: string
   onBackToHome: () => void
 }
 
@@ -28,7 +30,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-export default function PublicOnboardingForm({ initialCategory, onBackToHome }: Props) {
+export default function PublicOnboardingForm({ initialCategory, initialMessage, onBackToHome }: Props) {
   const { branding } = useBranding()
   const [products, setProducts] = useState<PublicProduct[]>([])
   const [loadingProducts, setLoadingProducts] = useState(true)
@@ -39,7 +41,7 @@ export default function PublicOnboardingForm({ initialCategory, onBackToHome }: 
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(initialMessage ?? '')
   const [consent, setConsent] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)

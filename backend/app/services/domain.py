@@ -285,6 +285,7 @@ class OnboardingService:
     def __init__(self, db: Session):
         self.repo = OnboardingApplicationRepository(db)
         self.products = ProductRepository(db)
+        self.customers = CustomerRepository(db)
 
     def list(self) -> list[dict]:
         return [onboarding_application_to_dict(a) for a in self.repo.get_all()]
@@ -326,7 +327,31 @@ class OnboardingService:
             raise HTTPException(status_code=422, detail="Invalid status")
         for field, value in payload.items():
             setattr(entity, field, value)
+        if entity.status == "approved" and not entity.customer_id:
+            entity.customer_id = self._convert_to_customer(entity).id
         return onboarding_application_to_dict(self.repo.save(entity))
+
+    def _convert_to_customer(self, application: OnboardingApplication) -> Customer:
+        """Approving an application onboards the applicant as a real customer record."""
+        customer = Customer(
+            id=self.customers.new_id(),
+            customer_number=self._new_customer_number(),
+            customer_type="Individual",
+            first_name=application.applicant_first_name,
+            last_name=application.applicant_last_name,
+            email=application.applicant_email,
+            phone=application.applicant_phone,
+            status="active",
+            notes=f"Converted from onboarding application {application.reference}.",
+        )
+        return self.customers.add(customer)
+
+    def _new_customer_number(self) -> str:
+        for _ in range(5):
+            candidate = f"CUS-{uuid4().hex[:8].upper()}"
+            if not self.customers.get_by_number(candidate):
+                return candidate
+        raise HTTPException(status_code=500, detail="Could not generate a unique customer number")
 
     def _new_reference(self) -> str:
         for _ in range(5):

@@ -4,7 +4,18 @@ import { useBranding } from '../config/BrandingContext'
 import type { BrandingConfig } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote'
-interface Props { onNavigate: (p: Page) => void; onRequestQuote?: (category?: string) => void }
+
+/** Snapshot of the calculator's indicative quote, carried into the onboarding form. */
+export interface QuoteSummary {
+  coverType: 'basic' | 'standard' | 'premium'
+  value: number
+  age: number
+  state: string
+  annualPremium: number
+  monthlyPremium: number
+}
+
+interface Props { onNavigate: (p: Page) => void; onRequestQuote?: (category?: string, quote?: QuoteSummary) => void }
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 function Eyebrow({ children }: { children: string }) {
@@ -66,7 +77,7 @@ const products = [
 ]
 
 // ── Pricing Calculator ────────────────────────────────────────────────────────
-function PricingCalculator({ productId }: { productId: string }) {
+function PricingCalculator({ productId, onRequestQuote }: { productId: string; onRequestQuote?: (category?: string, quote?: QuoteSummary) => void }) {
   const [coverType, setCoverType] = useState<'basic' | 'standard' | 'premium'>('standard')
   const [sliderVal, setSliderVal] = useState(5000000)
   const [age, setAge] = useState(4)
@@ -190,7 +201,9 @@ function PricingCalculator({ productId }: { productId: string }) {
           </div>
         </div>
 
-        <button style={{ width: '100%', padding: '14px', borderRadius: 12, background: '#1D4ED8', color: 'white', fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(29,78,216,0.4)' }}>
+        <button
+          onClick={() => onRequestQuote?.(productId, { coverType, value: sliderVal, age, state, annualPremium: annual, monthlyPremium: monthly })}
+          style={{ width: '100%', padding: '14px', borderRadius: 12, background: '#1D4ED8', color: 'white', fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(29,78,216,0.4)' }}>
           Proceed to Purchase <span style={{ width: 15, height: 15 }}>{Icon.arrow}</span>
         </button>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#94A3B8', textAlign: 'center', marginTop: 10, lineHeight: 1.5 }}>
@@ -386,7 +399,7 @@ export default function ProductPage({ onNavigate, onRequestQuote }: Props) {
 
           {/* Right: Calculator */}
           <div>
-            <PricingCalculator productId={activeProduct} />
+            <PricingCalculator productId={activeProduct} onRequestQuote={onRequestQuote} />
           </div>
         </div>
       </section>

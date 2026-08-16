@@ -234,6 +234,7 @@ class OnboardingApplicationRead(APIModel):
     consent_at: str
     status: str
     review_notes: str
+    customer_id: str
     created_at: str
     updated_at: str
 

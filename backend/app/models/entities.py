@@ -99,6 +99,9 @@ class OnboardingApplication(StringIdMixin, TimestampMixin, Base):
     consent_at: Mapped[str] = mapped_column(String(64), default="", nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="submitted", nullable=False)
     review_notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    customer_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("customers.id"), default=None, nullable=True, index=True
+    )
 
 
 class Role(StringIdMixin, TimestampMixin, Base):

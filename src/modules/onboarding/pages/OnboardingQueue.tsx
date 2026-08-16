@@ -89,6 +89,15 @@ function ReviewPanel({ application, onSave, onClose }: { application: Onboarding
         ))}
       </Stack>
 
+      {application.customerId && (
+        <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: '#16A34A', fontSize: 14 }}>✓</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#15803D' }}>
+            Converted to customer record <span style={{ fontFamily: 'var(--font-mono)' }}>{application.customerId}</span> — visible in the Customers module.
+          </span>
+        </div>
+      )}
+
       <div>
         <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 6, display: 'block' }}>Status</label>
         <select style={{ ...selectStyle, width: '100%' }} value={status} onChange={e => setStatus(e.target.value as OnboardingStatus)}>

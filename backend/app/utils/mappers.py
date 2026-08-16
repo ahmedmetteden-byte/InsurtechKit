@@ -110,6 +110,7 @@ def onboarding_application_to_dict(a: Any) -> dict:
         "consentAt": a.consent_at,
         "status": a.status,
         "reviewNotes": a.review_notes,
+        "customerId": a.customer_id or "",
         **_ts(a),
     }
 

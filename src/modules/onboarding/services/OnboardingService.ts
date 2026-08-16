@@ -1,4 +1,5 @@
 import { ProductService as MemoryProductService } from '../../products/services/ProductService'
+import { CustomerService as MemoryCustomerService } from '../../customers/services/CustomerService'
 import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
 import type {
   OnboardingApplication,
@@ -8,6 +9,35 @@ import type {
 
 function newReference(): string {
   return `APP-${crypto.randomUUID().split('-')[0].toUpperCase()}`
+}
+
+function newCustomerNumber(): string {
+  return `CUS-${crypto.randomUUID().split('-')[0].toUpperCase()}`
+}
+
+/** Approving an application onboards the applicant as a real customer record. */
+function convertToCustomer(application: OnboardingApplication): string {
+  const customer = MemoryCustomerService.create({
+    customerNumber: newCustomerNumber(),
+    customerType: 'Individual',
+    firstName: application.applicantFirstName,
+    lastName: application.applicantLastName,
+    companyName: '',
+    email: application.applicantEmail,
+    phone: application.applicantPhone,
+    dateOfBirth: '',
+    gender: '',
+    identificationType: '',
+    identificationNumber: '',
+    address: '',
+    city: '',
+    state: '',
+    country: 'Nigeria',
+    occupation: '',
+    status: 'active',
+    notes: `Converted from onboarding application ${application.reference}.`,
+  })
+  return customer.id
 }
 
 /**
@@ -46,6 +76,7 @@ class OnboardingServiceImpl {
       consentAt: now,
       status: 'submitted',
       reviewNotes: '',
+      customerId: '',
       createdAt: now,
       updatedAt: now,
     }
@@ -65,6 +96,9 @@ class OnboardingServiceImpl {
       id: current.id,
       createdAt: current.createdAt,
       updatedAt: new Date().toISOString(),
+    }
+    if (updated.status === 'approved' && !updated.customerId) {
+      updated.customerId = convertToCustomer(updated)
     }
     this.applications = [
       ...this.applications.slice(0, index),

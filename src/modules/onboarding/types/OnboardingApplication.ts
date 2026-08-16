@@ -26,6 +26,20 @@ export interface OnboardingApplication {
   /** Set once the application is approved and converted into a Customer record. */
   customerId: string
   documents: OnboardingDocument[]
+  /** Staff-only log of notifications sent to the applicant — not shown on the public tracking page. */
+  notifications: OnboardingNotification[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OnboardingNotification {
+  id: string
+  channel: 'email'
+  recipient: string
+  subject: string
+  body: string
+  templateKey: string
+  status: string
   createdAt: string
   updatedAt: string
 }

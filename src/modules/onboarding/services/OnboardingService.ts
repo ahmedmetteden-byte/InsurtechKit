@@ -7,6 +7,8 @@ import type {
   OnboardingApplication,
   OnboardingApplicationSummary,
   OnboardingDocument,
+  OnboardingNotification,
+  OnboardingStatus,
   SubmitOnboardingApplicationInput,
   UpdateOnboardingApplicationInput,
   UploadOnboardingDocumentInput,
@@ -26,6 +28,61 @@ function newCustomerNumber(): string {
 /** Memory-only wrapper — keeps the real File so "download" works without a backend. */
 interface StoredDocument extends OnboardingDocument {
   file: File
+}
+
+/** Memory-only wrapper — tags each notification with the application it belongs to. */
+interface StoredNotification extends OnboardingNotification {
+  applicationId: string
+}
+
+/**
+ * Notification templates + the "provider" (mirrors the backend's log-based
+ * adapter — swap for a real email/SMS call later without touching callers).
+ */
+const NOTIFICATION_TEMPLATES: Record<string, (ctx: Record<string, string>) => [string, string]> = {
+  application_submitted: ctx => [
+    `We've received your ${ctx.productName} application — ${ctx.reference}`,
+    `Hi ${ctx.firstName}, thanks for applying for ${ctx.productName}. Your reference number is ${ctx.reference}. We'll be in touch soon.`,
+  ],
+  application_info_required: ctx => [
+    `Action needed on application ${ctx.reference}`,
+    `Hi ${ctx.firstName}, we need a bit more information to continue reviewing your ${ctx.productName} application (${ctx.reference}). Visit Track Application and upload the requested documents.`,
+  ],
+  application_approved: ctx => [
+    `You're approved — ${ctx.reference}`,
+    `Hi ${ctx.firstName}, great news — your ${ctx.productName} application (${ctx.reference}) has been approved. Our team will be in touch about next steps.`,
+  ],
+  application_declined: ctx => [
+    `Update on your application — ${ctx.reference}`,
+    `Hi ${ctx.firstName}, thank you for applying for ${ctx.productName}. We're unable to proceed with application ${ctx.reference} at this time.`,
+  ],
+  document_received: ctx => [
+    `We received your document — ${ctx.reference}`,
+    `Hi ${ctx.firstName}, we've received ${ctx.filename} for your application ${ctx.reference}. Our team will review it shortly.`,
+  ],
+}
+
+const STATUS_NOTIFICATION_TEMPLATE: Partial<Record<OnboardingStatus, string>> = {
+  info_required: 'application_info_required',
+  approved: 'application_approved',
+  declined: 'application_declined',
+}
+
+function buildNotification(templateKey: string, recipient: string, ctx: Record<string, string>): OnboardingNotification {
+  const [subject, body] = NOTIFICATION_TEMPLATES[templateKey](ctx)
+  console.log(`[notify:email] -> ${recipient} | ${subject}`)
+  const now = new Date().toISOString()
+  return {
+    id: `ntf-${crypto.randomUUID()}`,
+    channel: 'email',
+    recipient,
+    subject,
+    body,
+    templateKey,
+    status: 'sent',
+    createdAt: now,
+    updatedAt: now,
+  }
 }
 
 /** Approving an application onboards the applicant as a real customer record. */
@@ -60,6 +117,7 @@ function convertToCustomer(application: OnboardingApplication): string {
 class OnboardingServiceImpl {
   private applications: OnboardingApplication[] = []
   private documents: StoredDocument[] = []
+  private notifications: StoredNotification[] = []
 
   private documentsFor(applicationId: string): OnboardingDocument[] {
     return this.documents
@@ -67,17 +125,37 @@ class OnboardingServiceImpl {
       .map(({ file: _file, ...doc }) => doc)
   }
 
-  private withDocuments(application: OnboardingApplication): OnboardingApplication {
-    return { ...application, documents: this.documentsFor(application.id) }
+  private notificationsFor(applicationId: string): OnboardingNotification[] {
+    return this.notifications
+      .filter(n => n.applicationId === applicationId)
+      .map(({ applicationId: _applicationId, ...notification }) => notification)
+  }
+
+  private notify(templateKey: string, application: OnboardingApplication, extra?: Record<string, string>): void {
+    const notification = buildNotification(templateKey, application.applicantEmail, {
+      firstName: application.applicantFirstName,
+      productName: application.productName,
+      reference: application.reference,
+      ...extra,
+    })
+    this.notifications = [...this.notifications, { ...notification, applicationId: application.id }]
+  }
+
+  private withRelated(application: OnboardingApplication): OnboardingApplication {
+    return {
+      ...application,
+      documents: this.documentsFor(application.id),
+      notifications: this.notificationsFor(application.id),
+    }
   }
 
   getAll(): OnboardingApplication[] {
-    return this.applications.map(a => this.withDocuments(a))
+    return this.applications.map(a => this.withRelated(a))
   }
 
   getById(id: string): OnboardingApplication | undefined {
     const found = this.applications.find(a => a.id === id)
-    return found ? this.withDocuments(found) : undefined
+    return found ? this.withRelated(found) : undefined
   }
 
   lookup(input: LookupOnboardingApplicationInput): OnboardingApplicationSummary {
@@ -129,6 +207,7 @@ class OnboardingServiceImpl {
       file: input.file,
     }
     this.documents = [...this.documents, document]
+    this.notify('document_received', application, { filename: input.file.name })
     emitMemoryDataChange()
     const { file: _file, ...doc } = document
     return doc
@@ -162,12 +241,14 @@ class OnboardingServiceImpl {
       reviewNotes: '',
       customerId: '',
       documents: [],
+      notifications: [],
       createdAt: now,
       updatedAt: now,
     }
     this.applications = [...this.applications, application]
+    this.notify('application_submitted', application)
     emitMemoryDataChange()
-    return { ...application }
+    return this.withRelated(application)
   }
 
   update(input: UpdateOnboardingApplicationInput): OnboardingApplication | undefined {
@@ -185,19 +266,26 @@ class OnboardingServiceImpl {
     if (updated.status === 'approved' && !updated.customerId) {
       updated.customerId = convertToCustomer(updated)
     }
+    if (updated.status !== current.status) {
+      const templateKey = STATUS_NOTIFICATION_TEMPLATE[updated.status]
+      if (templateKey) {
+        this.notify(templateKey, updated)
+      }
+    }
     this.applications = [
       ...this.applications.slice(0, index),
       updated,
       ...this.applications.slice(index + 1),
     ]
     emitMemoryDataChange()
-    return this.withDocuments(updated)
+    return this.withRelated(updated)
   }
 
   /** Clear submissions (useful for demos / tests). */
   reset(): void {
     this.applications = []
     this.documents = []
+    this.notifications = []
     emitMemoryDataChange()
   }
 }

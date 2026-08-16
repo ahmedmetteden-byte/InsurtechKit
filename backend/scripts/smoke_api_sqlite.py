@@ -174,6 +174,7 @@ print("onboarding submit", submitted.status_code, submitted.json().get("referenc
 assert submitted.status_code == 201
 application_id = submitted.json()["id"]
 assert submitted.json()["status"] == "submitted"
+assert [n["templateKey"] for n in submitted.json()["notifications"]] == ["application_submitted"]
 
 onboarding_unauth = client.get("/api/v1/onboarding/applications")
 print("onboarding list unauth", onboarding_unauth.status_code)
@@ -201,6 +202,8 @@ print("onboarding review", onboarding_review.status_code, onboarding_review.json
 assert onboarding_review.status_code == 200
 assert onboarding_review.json()["status"] == "in_review"
 assert onboarding_review.json()["customerId"] == ""
+# in_review has no notification template — count must not grow
+assert [n["templateKey"] for n in onboarding_review.json()["notifications"]] == ["application_submitted"]
 
 # ── Onboarding documents: lookup, gated upload, staff download ────────────
 
@@ -235,6 +238,10 @@ onboarding_info_required = client.put(
 )
 print("onboarding info_required", onboarding_info_required.status_code)
 assert onboarding_info_required.status_code == 200
+assert [n["templateKey"] for n in onboarding_info_required.json()["notifications"]] == [
+    "application_submitted",
+    "application_info_required",
+]
 
 upload_bad_type = client.post(
     f"/api/v1/public/onboarding/applications/{application_id}/documents",
@@ -252,6 +259,18 @@ upload_ok = client.post(
 print("upload ok", upload_ok.status_code, upload_ok.json().get("originalFilename"))
 assert upload_ok.status_code == 201
 document_id = upload_ok.json()["id"]
+
+application_after_upload = client.get(f"/api/v1/onboarding/applications/{application_id}", headers=headers)
+print(
+    "application after upload",
+    application_after_upload.status_code,
+    [n["templateKey"] for n in application_after_upload.json()["notifications"]],
+)
+assert [n["templateKey"] for n in application_after_upload.json()["notifications"]] == [
+    "application_submitted",
+    "application_info_required",
+    "document_received",
+]
 
 lookup_after_upload = client.post(
     "/api/v1/public/onboarding/applications/lookup",
@@ -280,6 +299,12 @@ print("onboarding approve", onboarding_approved.status_code, onboarding_approved
 assert onboarding_approved.status_code == 200
 converted_customer_id = onboarding_approved.json()["customerId"]
 assert converted_customer_id
+assert [n["templateKey"] for n in onboarding_approved.json()["notifications"]] == [
+    "application_submitted",
+    "application_info_required",
+    "document_received",
+    "application_approved",
+]
 
 converted_customer = client.get(f"/api/v1/customers/{converted_customer_id}", headers=headers)
 print("converted customer", converted_customer.status_code, converted_customer.json().get("email"))
@@ -293,6 +318,8 @@ onboarding_reapproved = client.put(
 )
 print("onboarding re-approve idempotent", onboarding_reapproved.status_code, onboarding_reapproved.json().get("customerId"))
 assert onboarding_reapproved.json()["customerId"] == converted_customer_id
+# Status didn't actually change (still "approved") — no duplicate notification
+assert len(onboarding_reapproved.json()["notifications"]) == 4
 
 refreshed = client.post("/api/v1/auth/refresh", json={"refreshToken": refresh})
 print("refresh", refreshed.status_code)

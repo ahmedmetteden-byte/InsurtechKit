@@ -7,6 +7,7 @@ from app.models.entities import (
     Customer,
     FeatureFlags,
     Integration,
+    Notification,
     OnboardingApplication,
     OnboardingDocument,
     Permission,
@@ -68,6 +69,20 @@ class OnboardingDocumentRepository(BaseRepository[OnboardingDocument]):
         return list(
             self.db.scalars(
                 select(OnboardingDocument).where(OnboardingDocument.application_id == application_id)
+            ).all()
+        )
+
+
+class NotificationRepository(BaseRepository[Notification]):
+    model = Notification
+    id_prefix = "ntf"
+
+    def get_by_related(self, related_type: str, related_id: str) -> list[Notification]:
+        return list(
+            self.db.scalars(
+                select(Notification)
+                .where(Notification.related_type == related_type, Notification.related_id == related_id)
+                .order_by(Notification.created_at)
             ).all()
         )
 

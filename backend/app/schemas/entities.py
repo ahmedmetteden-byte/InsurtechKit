@@ -236,6 +236,21 @@ class OnboardingApplicationRead(APIModel):
     review_notes: str
     customer_id: str
     documents: list[OnboardingDocumentRead] = Field(default_factory=list)
+    notifications: list[NotificationRead] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+
+class NotificationRead(APIModel):
+    id: str
+    channel: str
+    recipient: str
+    subject: str
+    body: str
+    template_key: str
+    status: str
+    related_type: str
+    related_id: str
     created_at: str
     updated_at: str
 

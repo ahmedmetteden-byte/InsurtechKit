@@ -117,6 +117,22 @@ class OnboardingDocument(StringIdMixin, TimestampMixin, Base):
     storage_path: Mapped[str] = mapped_column(String(512), nullable=False)
 
 
+class Notification(StringIdMixin, TimestampMixin, Base):
+    """Log of dispatched notifications — polymorphic on (related_type, related_id)
+    so any module (onboarding, claims, policies, ...) can hook in without a new table."""
+
+    __tablename__ = "notifications"
+
+    channel: Mapped[str] = mapped_column(String(16), default="email", nullable=False)
+    recipient: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    template_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="sent", nullable=False)
+    related_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    related_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+
+
 class Role(StringIdMixin, TimestampMixin, Base):
     __tablename__ = "roles"
 

@@ -98,8 +98,11 @@ export default function PublicOnboardingForm({ initialCategory, initialMessage, 
         <div className="max-w-[560px] mx-auto" style={{ background: 'white', borderRadius: 22, border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.07)', padding: '40px 36px', textAlign: 'center' }}>
           <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#16A34A', fontSize: 24 }}>✓</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 10 }}>Application received</h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#64748B', lineHeight: 1.6, marginBottom: 22 }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#64748B', lineHeight: 1.6, marginBottom: 8 }}>
             Thanks, {result.applicantFirstName}. Your reference number is below — a member of the {branding.companyName} team will be in touch shortly.
+          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#94A3B8', lineHeight: 1.6, marginBottom: 22 }}>
+            We've also sent a confirmation to {result.applicantEmail}.
           </p>
           <div style={{ background: '#F8FAFC', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 18px', marginBottom: 24 }}>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Reference Number</p>

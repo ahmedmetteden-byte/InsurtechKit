@@ -142,6 +142,28 @@ function ReviewPanel({ application, onSave, onClose }: { application: Onboarding
       </div>
 
       <div>
+        <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 8, display: 'block' }}>
+          Notifications sent {application.notifications.length > 0 ? `(${application.notifications.length})` : ''}
+        </label>
+        {application.notifications.length === 0 ? (
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#94A3B8' }}>No notifications sent yet.</p>
+        ) : (
+          <Stack gap={6}>
+            {application.notifications.map(n => (
+              <div key={n.id} style={{ padding: '8px 12px', borderRadius: 8, background: '#FAFAF8', border: '1px solid #E4E2DC' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: '#0F172A' }}>{n.subject}</p>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94A3B8', whiteSpace: 'nowrap', flexShrink: 0 }}>{formatDate(n.createdAt)}</span>
+                </div>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94A3B8', marginTop: 2 }}>Email · {n.recipient}</p>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#64748B', marginTop: 6, lineHeight: 1.5 }}>{n.body}</p>
+              </div>
+            ))}
+          </Stack>
+        )}
+      </div>
+
+      <div>
         <label style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 6, display: 'block' }}>Status</label>
         <select style={{ ...selectStyle, width: '100%' }} value={status} onChange={e => setStatus(e.target.value as OnboardingStatus)}>
           {ONBOARDING_STATUSES.map(s => (

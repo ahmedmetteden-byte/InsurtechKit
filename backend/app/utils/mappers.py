@@ -127,6 +127,21 @@ def onboarding_document_to_dict(d: Any) -> dict:
     }
 
 
+def notification_to_dict(n: Any) -> dict:
+    return {
+        "id": n.id,
+        "channel": n.channel,
+        "recipient": n.recipient,
+        "subject": n.subject,
+        "body": n.body,
+        "templateKey": n.template_key,
+        "status": n.status,
+        "relatedType": n.related_type,
+        "relatedId": n.related_id,
+        **_ts(n),
+    }
+
+
 def role_to_dict(r: Any) -> dict:
     return {
         "id": r.id,

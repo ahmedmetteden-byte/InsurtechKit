@@ -16,6 +16,7 @@ from app.models.entities import (
     Customer,
     FeatureFlags,
     Integration,
+    Notification,
     OnboardingApplication,
     OnboardingDocument,
     Policy,
@@ -28,6 +29,7 @@ from app.repositories import (
     CustomerRepository,
     FeatureFlagsRepository,
     IntegrationRepository,
+    NotificationRepository,
     OnboardingApplicationRepository,
     OnboardingDocumentRepository,
     PermissionRepository,
@@ -54,6 +56,7 @@ from app.schemas.entities import (
     UserCreate,
     UserUpdate,
 )
+from app.services.notifications import STATUS_TEMPLATE, deliver, render
 from app.services.storage import resolve_path, save_upload
 from app.utils.mappers import (
     branding_to_dict,
@@ -61,6 +64,7 @@ from app.utils.mappers import (
     customer_to_dict,
     flags_to_dict,
     integration_to_dict,
+    notification_to_dict,
     onboarding_application_to_dict,
     onboarding_document_to_dict,
     permission_to_dict,
@@ -290,18 +294,68 @@ class ClaimService:
             raise HTTPException(status_code=404, detail="Claim not found")
 
 
+class NotificationService:
+    """Template + provider-adapter notification dispatch.
+
+    Any module can call `send()` with a template key and a polymorphic
+    (related_type, related_id) pair — swapping `deliver()` for a real
+    email/SMS provider later requires no changes here or at call sites.
+    """
+
+    def __init__(self, db: Session):
+        self.repo = NotificationRepository(db)
+
+    def send(self, template_key: str, recipient: str, context: dict, related_type: str, related_id: str) -> dict:
+        subject, body = render(template_key, context)
+        deliver("email", recipient, subject, body)
+        entity = Notification(
+            id=self.repo.new_id(),
+            channel="email",
+            recipient=recipient,
+            subject=subject,
+            body=body,
+            template_key=template_key,
+            status="sent",
+            related_type=related_type,
+            related_id=related_id,
+        )
+        return notification_to_dict(self.repo.add(entity))
+
+    def list_for(self, related_type: str, related_id: str) -> list[dict]:
+        return [notification_to_dict(n) for n in self.repo.get_by_related(related_type, related_id)]
+
+
 class OnboardingService:
     def __init__(self, db: Session):
         self.repo = OnboardingApplicationRepository(db)
         self.products = ProductRepository(db)
         self.customers = CustomerRepository(db)
         self.documents = OnboardingDocumentRepository(db)
+        self.notifications = NotificationService(db)
+        self.branding = BrandingRepository(db)
+
+    def _company_name(self) -> str:
+        branding = self.branding.get()
+        return branding.company_name if branding else "our team"
+
+    def _notify(self, template_key: str, application: OnboardingApplication, extra: dict | None = None) -> None:
+        context = {
+            "firstName": application.applicant_first_name,
+            "productName": application.product_name,
+            "reference": application.reference,
+            "companyName": self._company_name(),
+            **(extra or {}),
+        }
+        self.notifications.send(
+            template_key, application.applicant_email, context, "onboarding_application", application.id
+        )
 
     def _to_dict(self, application: OnboardingApplication) -> dict:
         data = onboarding_application_to_dict(application)
         data["documents"] = [
             onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
         ]
+        data["notifications"] = self.notifications.list_for("onboarding_application", application.id)
         return data
 
     def list(self) -> list[dict]:
@@ -351,7 +405,9 @@ class OnboardingService:
             consent_at=_now_iso(),
             status="submitted",
         )
-        return self._to_dict(self.repo.add(entity))
+        saved = self.repo.add(entity)
+        self._notify("application_submitted", saved)
+        return self._to_dict(saved)
 
     def update_status(self, id: str, data: OnboardingApplicationStatusUpdate) -> dict:
         entity = self.repo.get_by_id(id)
@@ -360,11 +416,17 @@ class OnboardingService:
         payload = data.model_dump(exclude_unset=True)
         if "status" in payload and payload["status"] not in ONBOARDING_STATUSES:
             raise HTTPException(status_code=422, detail="Invalid status")
+        previous_status = entity.status
         for field, value in payload.items():
             setattr(entity, field, value)
         if entity.status == "approved" and not entity.customer_id:
             entity.customer_id = self._convert_to_customer(entity).id
-        return self._to_dict(self.repo.save(entity))
+        saved = self.repo.save(entity)
+        if saved.status != previous_status:
+            template_key = STATUS_TEMPLATE.get(saved.status)
+            if template_key:
+                self._notify(template_key, saved)
+        return self._to_dict(saved)
 
     def save_document(
         self, application_id: str, document_type: str, filename: str, content_type: str, content: bytes
@@ -398,7 +460,9 @@ class OnboardingService:
             size_bytes=len(content),
             storage_path=storage_path,
         )
-        return onboarding_document_to_dict(self.documents.add(document))
+        saved = self.documents.add(document)
+        self._notify("document_received", application, {"filename": filename})
+        return onboarding_document_to_dict(saved)
 
     def get_document_file(self, application_id: str, document_id: str) -> tuple[dict, Path]:
         document = self.documents.get_by_id(document_id)

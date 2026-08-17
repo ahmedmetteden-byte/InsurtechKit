@@ -236,7 +236,9 @@ function PricingCalculator({ productId, onRequestQuote }: { productId: string; o
             {isThirdParty ? 'Fixed Annual Premium · NAICOM Regulated' : 'Indicative Annual Premium'}
           </p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, letterSpacing: '-0.04em', color: 'white', lineHeight: 1, marginBottom: 6 }}>{fmt(annual)}</p>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>or {fmt(monthly)}/month</p>
+          {!isThirdParty && (
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>or {fmt(monthly)}/month</p>
+          )}
           <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '14px 0' }} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {(isThirdParty

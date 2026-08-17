@@ -193,6 +193,22 @@ def seed_if_empty(db: Session) -> None:
                     active=True,
                 )
             )
+            db.add(
+                Product(
+                    id="prd-seed-motor-tp",
+                    name="Motor Third Party",
+                    code="MOT-TP",
+                    description="NAICOM-fixed third-party-only motor liability cover.",
+                    category="motor",
+                    status="active",
+                    # Fixed statutory rate set by NAICOM for private vehicles (₦15,000/yr since Jan 2023),
+                    # not a risk-based premium — do not adjust without a NAICOM circular.
+                    minimum_premium=15000,
+                    currency="NGN",
+                    requires_inspection=False,
+                    active=True,
+                )
+            )
 
     _seed_users(db)
     db.commit()

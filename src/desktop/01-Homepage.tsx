@@ -235,7 +235,7 @@ function CoveragePlans({ onNavigate }: Props) {
       tagColor: '#1D4ED8',
       sub: 'Third-party and comprehensive cover meeting all NAICOM requirements.',
       features: ['Third-party liability', 'Comprehensive own-damage', 'Fire, theft & flood', '24/7 roadside assistance'],
-      from: '₦2,100', period: '/month',
+      from: '₦1,250', period: '/month',
     },
     {
       id: 'home', label: 'Home Insurance', icon: Icon.home,

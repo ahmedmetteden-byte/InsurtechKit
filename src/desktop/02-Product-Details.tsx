@@ -5,14 +5,25 @@ import type { BrandingConfig } from '../config/branding'
 
 type Page = 'home' | 'product' | 'claims' | 'contact' | 'quote' | 'track'
 
-/** Snapshot of the calculator's indicative quote, carried into the onboarding form. */
+// NAICOM's fixed statutory rate for private-vehicle third-party-only motor
+// cover — ₦15,000/yr since Jan 2023 (up from ₦5,000). Not risk-based, so it
+// does not vary with vehicle value, age, or state. Change only on a new
+// NAICOM circular, and keep in sync with the "Motor Third Party" product's
+// minimumPremium in the product catalogue (frontend defaultProducts.ts /
+// backend db/seed.py).
+const THIRD_PARTY_ANNUAL_PREMIUM = 15000
+
+/** Snapshot of the calculator's quote, carried into the onboarding form. */
 export interface QuoteSummary {
+  policyType: 'third_party' | 'comprehensive'
   coverType: 'basic' | 'standard' | 'premium'
   value: number
   age: number
   state: string
   annualPremium: number
   monthlyPremium: number
+  /** Product code hint so the onboarding form preselects the exact matching product. */
+  productCode?: string
 }
 
 interface Props { onNavigate: (p: Page) => void; onRequestQuote?: (category?: string, quote?: QuoteSummary) => void }
@@ -37,7 +48,7 @@ const products = [
     img: 'https://images.unsplash.com/photo-1583429891508-015ef9cd958e?w=1200&h=500&fit=crop&auto=format',
     headline: 'Drive with confidence across Nigeria',
     sub: 'NAICOM-compliant third-party and comprehensive motor insurance — meeting all MVTPI Act requirements with instant digital certificates.',
-    minPremium: '₦2,100/mo',
+    minPremium: '₦1,250/mo',
     included: [
       { cat: 'Liability', items: ['Third-party bodily injury liability', 'Third-party property damage (up to ₦3,000,000)', 'Uninsured motorist protection'] },
       { cat: 'Vehicle Damage', items: ['Comprehensive own-damage cover', 'Windscreen and glass replacement', 'Natural disaster (flood, wind, hail)', 'Fire and self-ignition damage'] },
@@ -78,11 +89,15 @@ const products = [
 
 // ── Pricing Calculator ────────────────────────────────────────────────────────
 function PricingCalculator({ productId, onRequestQuote }: { productId: string; onRequestQuote?: (category?: string, quote?: QuoteSummary) => void }) {
+  const [policyType, setPolicyType] = useState<'third_party' | 'comprehensive'>('comprehensive')
   const [coverType, setCoverType] = useState<'basic' | 'standard' | 'premium'>('standard')
   const [sliderVal, setSliderVal] = useState(5000000)
   const [age, setAge] = useState(4)
   const [state, setState] = useState('Lagos')
   const [stateOpen, setStateOpen] = useState(false)
+
+  const isMotor = productId === 'motor'
+  const isThirdParty = isMotor && policyType === 'third_party'
 
   const states = ['Lagos','Abuja FCT','Rivers','Kano','Oyo','Delta','Enugu','Ogun','Anambra','Kaduna','Kwara','Ondo','Edo','Imo','Plateau']
   const stateRate: Record<string, number> = { Lagos: 1.0, 'Abuja FCT': 0.95, Rivers: 1.05, Kano: 0.88, Oyo: 0.92 }
@@ -93,7 +108,9 @@ function PricingCalculator({ productId, onRequestQuote }: { productId: string; o
   const ageFactor = Math.max(0.65, 1 - age * 0.02)
 
   let annual = 0
-  if (productId === 'motor') {
+  if (isThirdParty) {
+    annual = THIRD_PARTY_ANNUAL_PREMIUM
+  } else if (productId === 'motor') {
     annual = Math.round(sliderVal * baseRate * ageFactor * m)
   } else if (productId === 'health') {
     annual = Math.round(sliderVal * 0.08 * (coverType === 'premium' ? 1.4 : coverType === 'standard' ? 1.0 : 0.7) * m)
@@ -114,85 +131,118 @@ function PricingCalculator({ productId, onRequestQuote }: { productId: string; o
           <div style={{ width: 18, height: 18, color: '#60A5FA' }}>{Icon.zap}</div>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'white', letterSpacing: '-0.01em' }}>Instant Quote Calculator</p>
         </div>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>No personal data required · Indicative pricing</p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+          {isThirdParty ? 'No personal data required · Fixed NAICOM rate' : 'No personal data required · Indicative pricing'}
+        </p>
       </div>
 
       <div style={{ padding: '24px 26px' }}>
-        {/* Cover tier */}
-        <div style={{ marginBottom: 22 }}>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A', marginBottom: 10 }}>Cover Level</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-            {[
-              { id: 'basic', label: 'Basic', sub: 'Essential' },
-              { id: 'standard', label: 'Standard', sub: 'Recommended' },
-              { id: 'premium', label: 'Premium', sub: 'Full cover' },
-            ].map(t => (
-              <button key={t.id} onClick={() => setCoverType(t.id as 'basic' | 'standard' | 'premium')}
-                style={{ padding: '10px 6px', borderRadius: 10, border: `2px solid ${coverType === t.id ? '#1D4ED8' : 'var(--border)'}`, background: coverType === t.id ? '#EFF6FF' : 'white', cursor: 'pointer', transition: 'all 0.2s' }}>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, color: coverType === t.id ? '#1D4ED8' : '#475569' }}>{t.label}</p>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94A3B8', marginTop: 1 }}>{t.sub}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Value slider */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{sliderLabel}</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: '#1D4ED8' }}>{fmt(sliderVal)}</p>
-          </div>
-          <input type="range" min={500000} max={50000000} step={500000} value={sliderVal} onChange={e => setSliderVal(+e.target.value)}
-            style={{ width: '100%', accentColor: '#1D4ED8', cursor: 'pointer' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94A3B8' }}>₦500K</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94A3B8' }}>₦50M</span>
-          </div>
-        </div>
-
-        {/* Age slider */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A' }}>
-              {productId === 'health' ? 'Oldest Member Age' : productId === 'motor' ? 'Vehicle Age (years)' : 'Property Age (years)'}
-            </p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: '#1D4ED8' }}>{age} {age === 1 ? 'yr' : 'yrs'}</p>
-          </div>
-          <input type="range" min={0} max={30} step={1} value={age} onChange={e => setAge(+e.target.value)}
-            style={{ width: '100%', accentColor: '#1D4ED8', cursor: 'pointer' }} />
-        </div>
-
-        {/* State */}
-        <div style={{ marginBottom: 22, position: 'relative' }}>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A', marginBottom: 8 }}>State of Registration</p>
-          <button onClick={() => setStateOpen(o => !o)}
-            style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: `1.5px solid ${stateOpen ? '#1D4ED8' : 'var(--border)'}`, background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, color: '#0F172A' }}>
-            {state}
-            <div style={{ width: 16, height: 16, color: '#94A3B8', transition: 'transform 0.2s', transform: stateOpen ? 'rotate(180deg)' : 'none' }}>{Icon.chevDown}</div>
-          </button>
-          {stateOpen && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'white', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 30, maxHeight: 180, overflowY: 'auto', scrollbarWidth: 'none' }}>
-              {states.map(s => (
-                <button key={s} onClick={() => { setState(s); setStateOpen(false) }}
-                  style={{ width: '100%', padding: '10px 14px', fontFamily: 'var(--font-body)', fontSize: 13, color: state === s ? '#1D4ED8' : '#1E293B', background: state === s ? '#EFF6FF' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
-                  {s}{state === s && <div style={{ width: 14, height: 14, color: '#1D4ED8' }}>{Icon.check}</div>}
+        {/* Policy type (motor only) */}
+        {isMotor && (
+          <div style={{ marginBottom: 22 }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A', marginBottom: 10 }}>Policy Type</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              {[
+                { id: 'comprehensive', label: 'Comprehensive', sub: 'Own-damage + third-party' },
+                { id: 'third_party', label: 'Third Party Only', sub: 'Fixed NAICOM rate' },
+              ].map(t => (
+                <button key={t.id} onClick={() => setPolicyType(t.id as 'third_party' | 'comprehensive')}
+                  style={{ padding: '10px 8px', borderRadius: 10, border: `2px solid ${policyType === t.id ? '#1D4ED8' : 'var(--border)'}`, background: policyType === t.id ? '#EFF6FF' : 'white', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, color: policyType === t.id ? '#1D4ED8' : '#475569' }}>{t.label}</p>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94A3B8', marginTop: 1 }}>{t.sub}</p>
                 </button>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {isThirdParty ? (
+          <div style={{ marginBottom: 22, padding: '14px 16px', borderRadius: 12, background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#1E40AF', lineHeight: 1.6 }}>
+              NAICOM sets a single nationwide rate for third-party-only cover — it doesn't vary by vehicle value, age, or state, so those inputs don't apply here.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Cover tier */}
+            <div style={{ marginBottom: 22 }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A', marginBottom: 10 }}>Cover Level</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {[
+                  { id: 'basic', label: 'Basic', sub: 'Essential' },
+                  { id: 'standard', label: 'Standard', sub: 'Recommended' },
+                  { id: 'premium', label: 'Premium', sub: 'Full cover' },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setCoverType(t.id as 'basic' | 'standard' | 'premium')}
+                    style={{ padding: '10px 6px', borderRadius: 10, border: `2px solid ${coverType === t.id ? '#1D4ED8' : 'var(--border)'}`, background: coverType === t.id ? '#EFF6FF' : 'white', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, color: coverType === t.id ? '#1D4ED8' : '#475569' }}>{t.label}</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94A3B8', marginTop: 1 }}>{t.sub}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Value slider */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{sliderLabel}</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: '#1D4ED8' }}>{fmt(sliderVal)}</p>
+              </div>
+              <input type="range" min={500000} max={50000000} step={500000} value={sliderVal} onChange={e => setSliderVal(+e.target.value)}
+                style={{ width: '100%', accentColor: '#1D4ED8', cursor: 'pointer' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94A3B8' }}>₦500K</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94A3B8' }}>₦50M</span>
+              </div>
+            </div>
+
+            {/* Age slider */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A' }}>
+                  {productId === 'health' ? 'Oldest Member Age' : productId === 'motor' ? 'Vehicle Age (years)' : 'Property Age (years)'}
+                </p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: '#1D4ED8' }}>{age} {age === 1 ? 'yr' : 'yrs'}</p>
+              </div>
+              <input type="range" min={0} max={30} step={1} value={age} onChange={e => setAge(+e.target.value)}
+                style={{ width: '100%', accentColor: '#1D4ED8', cursor: 'pointer' }} />
+            </div>
+
+            {/* State */}
+            <div style={{ marginBottom: 22, position: 'relative' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: '#0F172A', marginBottom: 8 }}>State of Registration</p>
+              <button onClick={() => setStateOpen(o => !o)}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: `1.5px solid ${stateOpen ? '#1D4ED8' : 'var(--border)'}`, background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, color: '#0F172A' }}>
+                {state}
+                <div style={{ width: 16, height: 16, color: '#94A3B8', transition: 'transform 0.2s', transform: stateOpen ? 'rotate(180deg)' : 'none' }}>{Icon.chevDown}</div>
+              </button>
+              {stateOpen && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'white', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 30, maxHeight: 180, overflowY: 'auto', scrollbarWidth: 'none' }}>
+                  {states.map(s => (
+                    <button key={s} onClick={() => { setState(s); setStateOpen(false) }}
+                      style={{ width: '100%', padding: '10px 14px', fontFamily: 'var(--font-body)', fontSize: 13, color: state === s ? '#1D4ED8' : '#1E293B', background: state === s ? '#EFF6FF' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
+                      {s}{state === s && <div style={{ width: 14, height: 14, color: '#1D4ED8' }}>{Icon.check}</div>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Result */}
         <div style={{ background: 'linear-gradient(135deg, #1D4ED8, #1E3A8A)', borderRadius: 16, padding: '20px', marginBottom: 16 }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Indicative Annual Premium</p>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+            {isThirdParty ? 'Fixed Annual Premium · NAICOM Regulated' : 'Indicative Annual Premium'}
+          </p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, letterSpacing: '-0.04em', color: 'white', lineHeight: 1, marginBottom: 6 }}>{fmt(annual)}</p>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>or {fmt(monthly)}/month</p>
           <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '14px 0' }} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {[
-              { k: 'Cover', v: coverType.charAt(0).toUpperCase() + coverType.slice(1) },
-              { k: 'State', v: state },
-            ].map(r => (
+            {(isThirdParty
+              ? [{ k: 'Cover', v: 'Third Party Only' }, { k: 'Rate', v: 'Fixed by NAICOM' }]
+              : [{ k: 'Cover', v: coverType.charAt(0).toUpperCase() + coverType.slice(1) }, { k: 'State', v: state }]
+            ).map(r => (
               <div key={r.k}>
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>{r.k}</p>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{r.v}</p>
@@ -202,12 +252,18 @@ function PricingCalculator({ productId, onRequestQuote }: { productId: string; o
         </div>
 
         <button
-          onClick={() => onRequestQuote?.(productId, { coverType, value: sliderVal, age, state, annualPremium: annual, monthlyPremium: monthly })}
+          onClick={() => onRequestQuote?.(productId, {
+            policyType: isMotor ? policyType : 'comprehensive',
+            coverType, value: sliderVal, age, state, annualPremium: annual, monthlyPremium: monthly,
+            productCode: isMotor ? (isThirdParty ? 'MOT-TP' : 'MOT-COMP') : undefined,
+          })}
           style={{ width: '100%', padding: '14px', borderRadius: 12, background: '#1D4ED8', color: 'white', fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(29,78,216,0.4)' }}>
           Proceed to Purchase <span style={{ width: 15, height: 15 }}>{Icon.arrow}</span>
         </button>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#94A3B8', textAlign: 'center', marginTop: 10, lineHeight: 1.5 }}>
-          Indicative quote · final premium confirmed at checkout · NAICOM-regulated
+          {isThirdParty
+            ? 'Fixed statutory rate · set by NAICOM, not calculated · confirmed at checkout'
+            : 'Indicative quote · final premium confirmed at checkout · NAICOM-regulated'}
         </p>
       </div>
     </div>

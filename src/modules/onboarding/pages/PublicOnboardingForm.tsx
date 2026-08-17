@@ -7,6 +7,9 @@ import type { OnboardingApplication } from '../types/OnboardingApplication'
 interface Props {
   /** Product category to preselect, e.g. passed from the marketing Product page CTA. */
   initialCategory?: string
+  /** Exact product code to preselect (e.g. 'MOT-TP') when the calculator knows which
+   *  specific product the quote applies to — takes priority over initialCategory. */
+  initialProductCode?: string
   /** Prefilled message, e.g. the calculator's indicative quote summary. */
   initialMessage?: string
   onBackToHome: () => void
@@ -30,7 +33,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-export default function PublicOnboardingForm({ initialCategory, initialMessage, onBackToHome }: Props) {
+export default function PublicOnboardingForm({ initialCategory, initialProductCode, initialMessage, onBackToHome }: Props) {
   const { branding } = useBranding()
   const [products, setProducts] = useState<PublicProduct[]>([])
   const [loadingProducts, setLoadingProducts] = useState(true)
@@ -54,7 +57,11 @@ export default function PublicOnboardingForm({ initialCategory, initialMessage, 
       .then(list => {
         if (cancelled) return
         setProducts(list)
-        const preselect = initialCategory ? list.find(p => p.category === initialCategory) : undefined
+        const preselect = initialProductCode
+          ? list.find(p => p.code === initialProductCode)
+          : initialCategory
+          ? list.find(p => p.category === initialCategory)
+          : undefined
         setProductId((preselect ?? list[0])?.id ?? '')
       })
       .catch(() => {
@@ -64,7 +71,7 @@ export default function PublicOnboardingForm({ initialCategory, initialMessage, 
         if (!cancelled) setLoadingProducts(false)
       })
     return () => { cancelled = true }
-  }, [initialCategory])
+  }, [initialCategory, initialProductCode])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

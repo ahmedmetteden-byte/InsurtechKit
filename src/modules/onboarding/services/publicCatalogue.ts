@@ -12,6 +12,7 @@ export interface PublicProduct {
   id: string
   name: string
   category: string
+  code: string
 }
 
 export async function getPublicActiveProducts(): Promise<PublicProduct[]> {
@@ -20,5 +21,5 @@ export async function getPublicActiveProducts(): Promise<PublicProduct[]> {
   }
   return MemoryProductService.getAll()
     .filter(p => p.active)
-    .map(p => ({ id: p.id, name: p.name, category: p.category }))
+    .map(p => ({ id: p.id, name: p.name, category: p.category, code: p.code }))
 }

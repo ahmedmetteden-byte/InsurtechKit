@@ -92,7 +92,9 @@ export default function App() {
   }
 
   const quoteMessage = quoteSummary
-    ? `Indicative quote from the calculator: ${quoteSummary.coverType} cover, ₦${quoteSummary.value.toLocaleString()} value, ${quoteSummary.state}, ~₦${quoteSummary.annualPremium.toLocaleString()}/year (₦${quoteSummary.monthlyPremium.toLocaleString()}/month).`
+    ? quoteSummary.policyType === 'third_party'
+      ? `Third-party only cover — fixed NAICOM premium of ₦${quoteSummary.annualPremium.toLocaleString()}/year (₦${quoteSummary.monthlyPremium.toLocaleString()}/month).`
+      : `Indicative quote from the calculator: ${quoteSummary.coverType} cover, ₦${quoteSummary.value.toLocaleString()} value, ${quoteSummary.state}, ~₦${quoteSummary.annualPremium.toLocaleString()}/year (₦${quoteSummary.monthlyPremium.toLocaleString()}/month).`
     : undefined
 
   // ── Admin mode — full-screen, no nav/footer
@@ -150,7 +152,7 @@ export default function App() {
         {page === 'product' && isEnabled('products') && <ProductPage onNavigate={navigate} onRequestQuote={requestQuote} />}
         {page === 'claims'  && isEnabled('claims') && <ClaimsPage  onNavigate={navigate} />}
         {page === 'contact' && isEnabled('agents') && <ContactPage onNavigate={navigate} />}
-        {page === 'quote'   && isEnabled('onboarding') && <PublicOnboardingForm initialCategory={quoteCategory} initialMessage={quoteMessage} onBackToHome={() => navigate('home')} />}
+        {page === 'quote'   && isEnabled('onboarding') && <PublicOnboardingForm initialCategory={quoteCategory} initialProductCode={quoteSummary?.productCode} initialMessage={quoteMessage} onBackToHome={() => navigate('home')} />}
         {page === 'track'   && isEnabled('onboarding') && <TrackApplicationPage onBackToHome={() => navigate('home')} />}
       </main>
       <Footer onNavigate={navigate} />

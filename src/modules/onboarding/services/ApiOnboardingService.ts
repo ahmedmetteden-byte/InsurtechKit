@@ -80,6 +80,16 @@ class ApiOnboardingServiceImpl {
     return result
   }
 
+  async downloadCertificate(applicationId: string): Promise<void> {
+    const blob = await apiFiles.getBlob(`/public/onboarding/applications/${applicationId}/policy/certificate`)
+    saveBlob(blob, `certificate-${applicationId}.pdf`)
+  }
+
+  async downloadReceipt(applicationId: string, paymentId: string): Promise<void> {
+    const blob = await apiFiles.getBlob(`/public/onboarding/applications/${applicationId}/payments/${paymentId}/receipt`)
+    saveBlob(blob, `receipt-${paymentId}.pdf`)
+  }
+
   async submitClaim(input: SubmitClaimInput): Promise<Claim> {
     return api.post<Claim>(`/public/onboarding/applications/${input.applicationId}/claims`, {
       incidentDate: input.incidentDate,

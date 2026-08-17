@@ -1,6 +1,9 @@
 import { defaultPolicies } from '../config/defaultPolicies'
 import type { CreatePolicyInput, Policy, UpdatePolicyInput } from '../types/Policy'
 import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
+import { defaultBranding } from '../../../config/branding'
+import { saveBlob } from '../../../data/http'
+import { buildPolicyCertificatePdf } from '../../../utils/pdf'
 
 /**
  * In-memory Policy service.
@@ -50,6 +53,26 @@ class PolicyServiceImpl {
     ]
     emitMemoryDataChange()
     return { ...updated }
+  }
+
+  downloadCertificate(id: string): void {
+    const policy = this.getById(id)
+    if (!policy) return
+    const blob = buildPolicyCertificatePdf({
+      companyName: defaultBranding.companyName,
+      licenceNo: defaultBranding.licenceNo,
+      policyNumber: policy.policyNumber,
+      customerName: policy.customerName,
+      productName: policy.productName,
+      policyType: policy.policyType,
+      sumInsured: policy.sumInsured,
+      premium: policy.premium,
+      currency: policy.currency,
+      effectiveDate: policy.effectiveDate,
+      expiryDate: policy.expiryDate,
+      status: policy.status,
+    })
+    saveBlob(blob, `certificate-${policy.policyNumber}.pdf`)
   }
 
   delete(id: string): boolean {

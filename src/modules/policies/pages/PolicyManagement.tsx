@@ -294,6 +294,7 @@ export default function PolicyManagement() {
                   <td style={{ padding: '14px 16px' }}>
                     <Row gap={6} wrap={false}>
                       <Button variant="ghost" size="sm" onClick={() => open('view', p.id)}>View</Button>
+                      <Button variant="outline" size="sm" onClick={() => { void Promise.resolve(PolicyService.downloadCertificate(p.id)) }}>Certificate</Button>
                       <Button variant="outline" size="sm" onClick={() => open('edit', p.id)}>Edit</Button>
                       <Button variant="danger" size="sm" onClick={() => open('delete', p.id)}>Delete</Button>
                     </Row>

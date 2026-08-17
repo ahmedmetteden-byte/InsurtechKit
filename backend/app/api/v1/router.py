@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.api.v1.auth import router as auth_router
 from app.dependencies.auth import get_user_permissions, require_permission
@@ -216,6 +216,20 @@ def delete_policy(
     return {"message": "Policy deleted"}
 
 
+@router.get("/policies/{id}/certificate", tags=["Policies"])
+def download_policy_certificate(
+    id: str,
+    _: User = Depends(require_permission("policies.view")),
+    service: PolicyService = Depends(get_policy_service),
+):
+    pdf_bytes = service.get_certificate_pdf(id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="certificate-{id}.pdf"'},
+    )
+
+
 # ── Claims ─────────────────────────────────────────────────────────────────
 
 @router.get("/claims", response_model=list[ClaimRead], tags=["Claims"])
@@ -349,6 +363,33 @@ def submit_onboarding_claim(
     service: OnboardingService = Depends(get_onboarding_service),
 ):
     return service.submit_claim(id, body.incident_date, body.description, body.claim_amount)
+
+
+@router.get("/public/onboarding/applications/{id}/policy/certificate", tags=["Public"])
+def download_onboarding_policy_certificate(
+    id: str,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    pdf_bytes = service.get_policy_certificate(id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="certificate-{id}.pdf"'},
+    )
+
+
+@router.get("/public/onboarding/applications/{id}/payments/{payment_id}/receipt", tags=["Public"])
+def download_onboarding_payment_receipt(
+    id: str,
+    payment_id: str,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    pdf_bytes = service.get_payment_receipt(id, payment_id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="receipt-{payment_id}.pdf"'},
+    )
 
 
 # ── Onboarding (staff review) ─────────────────────────────────────────────

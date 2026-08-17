@@ -130,7 +130,16 @@ function PaymentSection({ application, onRefresh }: { application: OnboardingApp
                   <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748B', marginBottom: 8 }}>
                     Receipt {p.receiptNumber} · {paymentMethodLabel(p.method)} · {formatDate(p.paidAt)}
                   </p>
-                  <Button variant="outline" size="sm" disabled={busy} onClick={() => refund(p.id)}>Refund</Button>
+                  <Row gap={8} wrap={false}>
+                    <Button variant="outline" size="sm" disabled={busy} onClick={() => refund(p.id)}>Refund</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { void Promise.resolve(OnboardingService.downloadReceipt(application.id, p.id)) }}
+                    >
+                      Receipt
+                    </Button>
+                  </Row>
                 </>
               )}
             </div>
@@ -215,11 +224,20 @@ function ReviewPanel({ application, onSave, onClose, onRefresh }: { application:
       <PaymentSection application={application} onRefresh={onRefresh} />
 
       {application.policyNumber && (
-        <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: '#16A34A', fontSize: 14 }}>✓</span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#15803D' }}>
-            Policy issued <span style={{ fontFamily: 'var(--font-mono)' }}>{application.policyNumber}</span> — visible in the Premiums module.
+        <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: '#16A34A', fontSize: 14 }}>✓</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#15803D' }}>
+              Policy issued <span style={{ fontFamily: 'var(--font-mono)' }}>{application.policyNumber}</span> — visible in the Premiums module.
+            </span>
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { void Promise.resolve(OnboardingService.downloadCertificate(application.id)) }}
+          >
+            Certificate
+          </Button>
         </div>
       )}
 

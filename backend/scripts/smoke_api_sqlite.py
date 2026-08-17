@@ -345,6 +345,10 @@ claim_before_policy = client.post(
 print("claim before policy issued", claim_before_policy.status_code)
 assert claim_before_policy.status_code == 409
 
+certificate_before_policy = client.get(f"/api/v1/public/onboarding/applications/{application_id}/policy/certificate")
+print("certificate before policy issued", certificate_before_policy.status_code)
+assert certificate_before_policy.status_code == 404
+
 pay_ok = client.post(
     f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/pay",
     json={"method": "paystack"},
@@ -353,6 +357,18 @@ print("pay ok", pay_ok.status_code, pay_ok.json().get("receiptNumber"))
 assert pay_ok.status_code == 200
 assert pay_ok.json()["status"] == "paid"
 assert pay_ok.json()["receiptNumber"]
+
+receipt_wrong_payment = client.get(
+    f"/api/v1/public/onboarding/applications/{application_id}/payments/not-a-real-payment/receipt"
+)
+print("receipt wrong payment", receipt_wrong_payment.status_code)
+assert receipt_wrong_payment.status_code == 404
+
+receipt_pdf = client.get(f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/receipt")
+print("receipt pdf", receipt_pdf.status_code, receipt_pdf.headers.get("content-type"), len(receipt_pdf.content))
+assert receipt_pdf.status_code == 200
+assert receipt_pdf.headers["content-type"] == "application/pdf"
+assert receipt_pdf.content[:4] == b"%PDF"
 
 pay_again = client.post(
     f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/pay",
@@ -375,6 +391,22 @@ assert [n["templateKey"] for n in application_after_payment.json()["notification
 policy_number = application_after_payment.json()["policyNumber"]
 print("policy issued", policy_number)
 assert policy_number.startswith("POL-")
+policy_id = application_after_payment.json()["policyId"]
+
+certificate_pdf = client.get(f"/api/v1/public/onboarding/applications/{application_id}/policy/certificate")
+print("certificate pdf", certificate_pdf.status_code, certificate_pdf.headers.get("content-type"))
+assert certificate_pdf.status_code == 200
+assert certificate_pdf.headers["content-type"] == "application/pdf"
+assert certificate_pdf.content[:4] == b"%PDF"
+
+certificate_staff_unauth = client.get(f"/api/v1/policies/{policy_id}/certificate")
+print("certificate staff unauth", certificate_staff_unauth.status_code)
+assert certificate_staff_unauth.status_code == 401
+
+certificate_staff = client.get(f"/api/v1/policies/{policy_id}/certificate", headers=headers)
+print("certificate staff", certificate_staff.status_code, len(certificate_staff.content))
+assert certificate_staff.status_code == 200
+assert certificate_staff.content[:4] == b"%PDF"
 
 claim_no_application = client.post(
     "/api/v1/public/onboarding/applications/not-a-real-app/claims",

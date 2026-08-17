@@ -4,7 +4,9 @@ import { PolicyService as MemoryPolicyService } from '../../policies/services/Po
 import { ClaimService as MemoryClaimService } from '../../claims/services/ClaimService'
 import type { Claim } from '../../claims'
 import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
+import { defaultBranding } from '../../../config/branding'
 import { saveBlob } from '../../../data/http'
+import { buildReceiptPdf } from '../../../utils/pdf'
 import type {
   LookupOnboardingApplicationInput,
   OnboardingApplication,
@@ -544,6 +546,40 @@ class OnboardingServiceImpl {
     this.notify('claim_submitted', application, { claimNumber: claim.claimNumber })
     emitMemoryDataChange()
     return claim
+  }
+
+  downloadCertificate(applicationId: string): void {
+    const application = this.applications.find(a => a.id === applicationId)
+    if (!application || !application.policyId) {
+      throw new Error('No policy has been issued yet.')
+    }
+    MemoryPolicyService.downloadCertificate(application.policyId)
+  }
+
+  downloadReceipt(applicationId: string, paymentId: string): void {
+    const application = this.applications.find(a => a.id === applicationId)
+    if (!application) {
+      throw new Error('Application not found')
+    }
+    const payment = this.payments.find(p => p.id === paymentId && p.applicationId === applicationId)
+    if (!payment) {
+      throw new Error('Payment not found')
+    }
+    if (payment.status !== 'paid') {
+      throw new Error('Receipt is only available once payment has been made.')
+    }
+    const blob = buildReceiptPdf({
+      companyName: defaultBranding.companyName,
+      receiptNumber: payment.receiptNumber,
+      reference: payment.reference,
+      customerName: `${application.applicantFirstName} ${application.applicantLastName}`,
+      description: payment.description,
+      amount: payment.amount,
+      currency: payment.currency,
+      method: payment.method,
+      paidAt: payment.paidAt,
+    })
+    saveBlob(blob, `receipt-${payment.receiptNumber}.pdf`)
   }
 
   /** Clear submissions (useful for demos / tests). */

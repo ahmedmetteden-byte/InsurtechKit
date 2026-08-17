@@ -58,6 +58,7 @@ from app.schemas.entities import (
     UserCreate,
     UserUpdate,
 )
+from app.services.documents import render_payment_receipt, render_policy_certificate
 from app.services.notifications import CLAIM_STATUS_TEMPLATE, STATUS_TEMPLATE, deliver, render
 from app.services.storage import resolve_path, save_upload
 from app.utils.mappers import (
@@ -197,6 +198,7 @@ class PolicyService:
         self.repo = PolicyRepository(db)
         self.customers = CustomerRepository(db)
         self.products = ProductRepository(db)
+        self.branding = BrandingRepository(db)
 
     def list(self) -> list[dict]:
         return [policy_to_dict(p) for p in self.repo.get_all()]
@@ -244,6 +246,13 @@ class PolicyService:
     def delete(self, id: str) -> None:
         if not self.repo.delete(id):
             raise HTTPException(status_code=404, detail="Policy not found")
+
+    def get_certificate_pdf(self, id: str) -> bytes:
+        policy = self.repo.get_by_id(id)
+        if not policy:
+            raise HTTPException(status_code=404, detail="Policy not found")
+        branding = self.branding.get()
+        return render_policy_certificate(policy_to_dict(policy), branding_to_dict(branding) if branding else {})
 
 
 class ClaimService:
@@ -364,12 +373,25 @@ class PaymentService:
 
     def __init__(self, db: Session):
         self.repo = PaymentRepository(db)
+        self.customers = CustomerRepository(db)
+        self.branding = BrandingRepository(db)
 
     def get(self, id: str) -> Payment:
         payment = self.repo.get_by_id(id)
         if not payment:
             raise HTTPException(status_code=404, detail="Payment not found")
         return payment
+
+    def get_receipt_pdf(self, id: str) -> bytes:
+        payment = self.get(id)
+        if payment.status != "paid":
+            raise HTTPException(status_code=409, detail="Receipt is only available once payment has been made.")
+        customer = self.customers.get_by_id(payment.customer_id) if payment.customer_id else None
+        customer_name = f"{customer.first_name} {customer.last_name}".strip() if customer else ""
+        branding = self.branding.get()
+        return render_payment_receipt(
+            payment_to_dict(payment), customer_name, branding_to_dict(branding) if branding else {}
+        )
 
     def create_for(
         self, related_type: str, related_id: str, customer_id: str | None, amount: float, currency: str, description: str
@@ -650,6 +672,29 @@ class OnboardingService:
             if not self.policies.get_by_number(candidate):
                 return candidate
         raise HTTPException(status_code=500, detail="Could not generate a unique policy number")
+
+    def get_policy_certificate(self, application_id: str) -> bytes:
+        """Public — download the certificate for the policy issued on this application."""
+        application = self.repo.get_by_id(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        if not application.policy_id:
+            raise HTTPException(status_code=404, detail="No policy has been issued yet.")
+        policy = self.policies.get_by_id(application.policy_id)
+        if not policy:
+            raise HTTPException(status_code=404, detail="Policy not found")
+        branding = self.branding.get()
+        return render_policy_certificate(policy_to_dict(policy), branding_to_dict(branding) if branding else {})
+
+    def get_payment_receipt(self, application_id: str, payment_id: str) -> bytes:
+        """Public — download the receipt for a paid invoice on this application."""
+        application = self.repo.get_by_id(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        payment = self.payments.get(payment_id)
+        if payment.related_type != "onboarding_application" or payment.related_id != application_id:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        return self.payments.get_receipt_pdf(payment_id)
 
     def submit_claim(self, application_id: str, incident_date: str, description: str, claim_amount: float) -> dict:
         """Public — files a claim against the policy issued for this application."""

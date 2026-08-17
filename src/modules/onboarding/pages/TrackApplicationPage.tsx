@@ -284,6 +284,13 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
                         <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: '#0F172A' }}>{value}</span>
                       </div>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => { void Promise.resolve(OnboardingService.downloadReceipt(application.id, invoice.id)) }}
+                      style={{ marginTop: 10, padding: '9px 16px', borderRadius: 10, background: 'white', color: '#15803D', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, border: '1px solid #BBF7D0', cursor: 'pointer' }}
+                    >
+                      Download Receipt
+                    </button>
                   </div>
                 )}
                 {invoice.status === 'refunded' && (
@@ -311,11 +318,20 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
             )}
 
             {application.policyNumber && (
-              <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#16A34A', fontSize: 14 }}>✓</span>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#15803D' }}>
-                  Your policy is active — <span style={{ fontFamily: 'var(--font-mono)' }}>{application.policyNumber}</span>
+              <div style={{ padding: '12px 14px', borderRadius: 10, background: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: '#16A34A', fontSize: 14 }}>✓</span>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#15803D' }}>
+                    Your policy is active — <span style={{ fontFamily: 'var(--font-mono)' }}>{application.policyNumber}</span>
+                  </span>
                 </span>
+                <button
+                  type="button"
+                  onClick={() => { void Promise.resolve(OnboardingService.downloadCertificate(application.id)) }}
+                  style={{ padding: '9px 16px', borderRadius: 10, background: 'white', color: '#15803D', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, border: '1px solid #BBF7D0', cursor: 'pointer' }}
+                >
+                  Download Certificate
+                </button>
               </div>
             )}
 

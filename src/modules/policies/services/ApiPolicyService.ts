@@ -3,7 +3,7 @@
  */
 import type { CreatePolicyInput, Policy, UpdatePolicyInput } from '../types/Policy'
 import { emitMemoryDataChange } from '../../../admin/memoryDataEvents'
-import { api } from '../../../data/http'
+import { api, apiFiles, saveBlob } from '../../../data/http'
 
 class ApiPolicyServiceImpl {
   private cache: Policy[] = []
@@ -35,6 +35,12 @@ class ApiPolicyServiceImpl {
     this.cache = this.cache.map(p => (p.id === id ? updated : p))
     emitMemoryDataChange()
     return { ...updated }
+  }
+
+  async downloadCertificate(id: string): Promise<void> {
+    const policy = this.getById(id)
+    const blob = await apiFiles.getBlob(`/policies/${id}/certificate`)
+    saveBlob(blob, `certificate-${policy?.policyNumber ?? id}.pdf`)
   }
 
   async delete(id: string): Promise<boolean> {

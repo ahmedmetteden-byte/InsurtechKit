@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+import json
+
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from fastapi.responses import FileResponse, Response
 
 from app.api.v1.auth import router as auth_router
@@ -37,6 +39,7 @@ from app.schemas.entities import (
     OnboardingApplicationRead,
     OnboardingApplicationStatusUpdate,
     OnboardingDocumentRead,
+    PaymentConfirmInput,
     PaymentMethodInput,
     PaymentRead,
     PermissionRead,
@@ -65,6 +68,7 @@ from app.services.domain import (
     ProductService,
     UserService,
 )
+from app.services.paystack import verify_webhook_signature
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -349,6 +353,44 @@ def pay_onboarding_invoice(
     service: OnboardingService = Depends(get_onboarding_service),
 ):
     return service.pay(id, payment_id, body.method)
+
+
+@router.post(
+    "/public/onboarding/applications/{id}/payments/{payment_id}/confirm",
+    response_model=PaymentRead,
+    tags=["Public"],
+)
+def confirm_onboarding_payment(
+    id: str,
+    payment_id: str,
+    body: PaymentConfirmInput,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    """Confirms a Paystack checkout the customer just completed in the popup."""
+    return service.confirm_payment(id, payment_id, body.reference)
+
+
+@router.post("/webhooks/paystack", tags=["Webhooks"])
+async def paystack_webhook(
+    request: Request,
+    service: OnboardingService = Depends(get_onboarding_service),
+):
+    """Backend-to-backend safety net in case the browser never returns with a
+    result. Always acks 200 once the signature checks out, so Paystack does
+    not retry on business-rule failures (already paid, amount mismatch)."""
+    payload = await request.body()
+    signature = request.headers.get("x-paystack-signature", "")
+    if not verify_webhook_signature(payload, signature):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    event = json.loads(payload)
+    if event.get("event") == "charge.success":
+        reference = event.get("data", {}).get("reference")
+        if reference:
+            try:
+                service.confirm_payment_by_reference(reference)
+            except HTTPException:
+                pass
+    return {"received": True}
 
 
 @router.post(

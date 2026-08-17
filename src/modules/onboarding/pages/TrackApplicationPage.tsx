@@ -1,6 +1,8 @@
 import { useState, type CSSProperties } from 'react'
 import { useBranding } from '../../../config/BrandingContext'
+import { isApiMode } from '../../../data/config'
 import { OnboardingService } from '../../../data/services'
+import { openPaystackCheckout } from '../../../utils/paystack'
 import { claimStatusLabel } from '../../claims'
 import {
   ONBOARDING_DOCUMENT_TYPES,
@@ -107,14 +109,30 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
     }
   }
 
+  const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY
+  const useLivePaystack = isApiMode && paymentMethod === 'paystack' && !!paystackPublicKey
+
   const handlePay = async (invoiceId: string) => {
     if (!application) return
     setPayError('')
     setPaying(true)
     try {
-      await Promise.resolve(
-        OnboardingService.pay({ applicationId: application.id, paymentId: invoiceId, method: paymentMethod }),
-      )
+      if (useLivePaystack) {
+        const invoice = application.payments.find(p => p.id === invoiceId)
+        if (!invoice) throw new Error('Invoice not found.')
+        const reference = await openPaystackCheckout({
+          publicKey: paystackPublicKey!,
+          email,
+          amountKobo: Math.round(invoice.amount * 100),
+          currency: invoice.currency,
+          reference: invoice.reference,
+        })
+        await Promise.resolve(OnboardingService.confirmPayment(application.id, invoiceId, reference))
+      } else {
+        await Promise.resolve(
+          OnboardingService.pay({ applicationId: application.id, paymentId: invoiceId, method: paymentMethod }),
+        )
+      }
       // Paying issues a policy server-side — re-fetch so the policy number and claim form appear.
       const refreshed = await Promise.resolve(
         OnboardingService.lookup({ reference: application.reference, email }),
@@ -264,7 +282,11 @@ export default function TrackApplicationPage({ onBackToHome }: Props) {
                     {payError && (
                       <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#B91C1C', marginTop: 10 }}>{payError}</p>
                     )}
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#60A5FA', marginTop: 10 }}>Simulated payment — no real charge is made in this demo kit.</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#60A5FA', marginTop: 10 }}>
+                      {useLivePaystack
+                        ? "Secured by Paystack — you'll enter your card details in a popup."
+                        : 'Simulated payment — no real charge is made in this demo kit.'}
+                    </p>
                   </div>
                 )}
                 {invoice.status === 'paid' && (

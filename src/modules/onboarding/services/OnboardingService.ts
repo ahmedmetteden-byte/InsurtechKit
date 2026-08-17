@@ -451,6 +451,12 @@ class OnboardingServiceImpl {
     return result
   }
 
+  /** Memory mode has no backend to verify a real Paystack transaction against,
+   *  so a "confirm" here just completes the simulated payment. */
+  confirmPayment(applicationId: string, paymentId: string, _reference: string): Payment {
+    return this.pay({ applicationId, paymentId, method: 'paystack' })
+  }
+
   private handlePaymentSuccess(application: OnboardingApplication, payment: Payment): void {
     if (!application.policyId) {
       const policyId = issuePolicy(application, payment)

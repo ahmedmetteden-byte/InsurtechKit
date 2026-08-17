@@ -285,6 +285,10 @@ class PaymentMethodInput(APIModel):
     method: str
 
 
+class PaymentConfirmInput(APIModel):
+    reference: str
+
+
 class StaffPaymentUpdate(APIModel):
     status: str
     method: str | None = None

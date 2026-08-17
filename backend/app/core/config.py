@@ -29,10 +29,15 @@ class Settings(BaseSettings):
     ENABLE_DOCS: bool = True
     RUN_MIGRATIONS_ON_STARTUP: bool = False
     UPLOAD_DIR: str = "uploads"
+    PAYSTACK_SECRET_KEY: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def paystack_configured(self) -> bool:
+        return bool(self.PAYSTACK_SECRET_KEY.strip())
 
     @property
     def is_production(self) -> bool:

@@ -60,6 +60,7 @@ from app.schemas.entities import (
 )
 from app.services.documents import render_payment_receipt, render_policy_certificate
 from app.services.notifications import CLAIM_STATUS_TEMPLATE, STATUS_TEMPLATE, deliver, render
+from app.services.paystack import PaystackError, verify_transaction
 from app.services.storage import resolve_path, save_upload
 from app.utils.mappers import (
     branding_to_dict,
@@ -382,6 +383,12 @@ class PaymentService:
             raise HTTPException(status_code=404, detail="Payment not found")
         return payment
 
+    def get_by_reference(self, reference: str) -> Payment:
+        payment = self.repo.get_by_reference(reference)
+        if not payment:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        return payment
+
     def get_receipt_pdf(self, id: str) -> bytes:
         payment = self.get(id)
         if payment.status != "paid":
@@ -425,6 +432,29 @@ class PaymentService:
         payment.paid_at = _now_iso()
         payment.receipt_number = self._new_receipt_number()
         return payment_to_dict(self.repo.save(payment))
+
+    def confirm_paystack(self, reference: str) -> dict:
+        """Verifies a transaction with Paystack's servers before marking it paid.
+
+        Idempotent: a payment already marked paid is returned as-is, so this is
+        safe to call from both the frontend's post-checkout confirm call and
+        the webhook without double-crediting.
+        """
+        payment = self.get_by_reference(reference)
+        if payment.status == "paid":
+            return payment_to_dict(payment)
+        if not get_settings().paystack_configured:
+            raise HTTPException(status_code=503, detail="Paystack is not configured on this server.")
+        try:
+            data = verify_transaction(reference)
+        except PaystackError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        if data.get("status") != "success":
+            raise HTTPException(status_code=402, detail="Payment was not successful.")
+        expected_kobo = round(payment.amount * 100)
+        if data.get("amount") != expected_kobo or data.get("currency") != payment.currency:
+            raise HTTPException(status_code=409, detail="Payment amount does not match the invoice.")
+        return self.mark_paid(payment.id, "paystack")
 
     def refund(self, id: str) -> dict:
         payment = self.get(id)
@@ -602,7 +632,10 @@ class OnboardingService:
         )
 
     def pay(self, application_id: str, payment_id: str, method: str) -> dict:
-        """Public, simulated checkout — no live gateway is called."""
+        """Simulated checkout — used for bank transfer/other, or as a demo
+        fallback for Paystack when no live gateway credentials are configured.
+        Once PAYSTACK_SECRET_KEY is set, Paystack payments must go through the
+        real checkout popup and `confirm_payment` instead of this shortcut."""
         application = self.repo.get_by_id(application_id)
         if not application:
             raise HTTPException(status_code=404, detail="Application not found")
@@ -613,9 +646,39 @@ class OnboardingService:
         payment = self.payments.get(payment_id)
         if payment.related_type != "onboarding_application" or payment.related_id != application_id:
             raise HTTPException(status_code=404, detail="Payment not found")
+        if method == "paystack" and get_settings().paystack_configured:
+            raise HTTPException(
+                status_code=422, detail="Paystack payments must be completed through the checkout popup."
+            )
         result = self.payments.mark_paid(payment_id, method)
         self._handle_payment_success(application, result)
         return result
+
+    def confirm_payment(self, application_id: str, payment_id: str, reference: str) -> dict:
+        """Confirms a live Paystack checkout: verifies with Paystack, marks the
+        invoice paid, and issues the policy — all idempotent against repeats
+        from the browser callback racing the webhook."""
+        application = self.repo.get_by_id(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        payment = self.payments.get(payment_id)
+        if payment.related_type != "onboarding_application" or payment.related_id != application_id:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        if payment.reference != reference:
+            raise HTTPException(status_code=422, detail="Payment reference does not match this invoice.")
+        already_paid = payment.status == "paid"
+        result = self.payments.confirm_paystack(reference)
+        if not already_paid:
+            self._handle_payment_success(application, result)
+        return result
+
+    def confirm_payment_by_reference(self, reference: str) -> dict:
+        """Used by the Paystack webhook, which only carries a transaction
+        reference — resolves the owning application via the payment record."""
+        payment = self.payments.get_by_reference(reference)
+        if payment.related_type != "onboarding_application":
+            raise HTTPException(status_code=404, detail="Payment not found")
+        return self.confirm_payment(payment.related_id, payment.id, reference)
 
     def staff_update_payment(self, application_id: str, payment_id: str, status: str, method: str | None) -> dict:
         application = self.repo.get_by_id(application_id)

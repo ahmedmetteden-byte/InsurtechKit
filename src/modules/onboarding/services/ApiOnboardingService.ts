@@ -66,6 +66,13 @@ class ApiOnboardingServiceImpl {
     )
   }
 
+  async confirmPayment(applicationId: string, paymentId: string, reference: string): Promise<Payment> {
+    return api.post<Payment>(
+      `/public/onboarding/applications/${applicationId}/payments/${paymentId}/confirm`,
+      { reference },
+    )
+  }
+
   async staffUpdatePayment(input: StaffUpdatePaymentInput): Promise<Payment> {
     const result = await api.put<Payment>(
       `/onboarding/applications/${input.applicationId}/payments/${input.paymentId}`,

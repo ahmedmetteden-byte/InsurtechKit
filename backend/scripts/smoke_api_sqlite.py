@@ -349,6 +349,34 @@ certificate_before_policy = client.get(f"/api/v1/public/onboarding/applications/
 print("certificate before policy issued", certificate_before_policy.status_code)
 assert certificate_before_policy.status_code == 404
 
+# ── Paystack: confirm/webhook endpoints exist and stay safely inert without
+# PAYSTACK_SECRET_KEY configured (this smoke run has no live gateway keys) ──
+
+confirm_wrong_reference = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/confirm",
+    json={"reference": "PAY-DOES-NOT-MATCH"},
+)
+print("confirm wrong reference", confirm_wrong_reference.status_code)
+assert confirm_wrong_reference.status_code == 422
+
+confirm_not_configured = client.post(
+    f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/confirm",
+    json={"reference": invoices[0]["reference"]},
+)
+print("confirm not configured", confirm_not_configured.status_code)
+assert confirm_not_configured.status_code == 503
+
+webhook_bad_signature = client.post(
+    "/api/v1/webhooks/paystack",
+    json={"event": "charge.success", "data": {"reference": invoices[0]["reference"]}},
+    headers={"x-paystack-signature": "not-a-real-signature"},
+)
+print("webhook bad signature", webhook_bad_signature.status_code)
+assert webhook_bad_signature.status_code == 401
+
+invoice_still_pending = client.get(f"/api/v1/onboarding/applications/{application_id}", headers=headers)
+assert invoice_still_pending.json()["payments"][0]["status"] == "pending"
+
 pay_ok = client.post(
     f"/api/v1/public/onboarding/applications/{application_id}/payments/{payment_id}/pay",
     json={"method": "paystack"},

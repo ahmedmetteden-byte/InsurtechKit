@@ -85,11 +85,34 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return data as T
 }
 
+const DEFAULT_PAGE_SIZE = 200
+
+/**
+ * Pages through a limit/offset-paginated list endpoint and returns every
+ * row. The backend caps each individual response (so one request can never
+ * return an unbounded table), so callers that need the *full* list — the
+ * admin pages that load once and then filter/search client-side — page
+ * through it here instead of assuming one request returns everything.
+ */
+async function requestAllPages<T>(path: string, pageSize: number): Promise<T[]> {
+  const results: T[] = []
+  const separator = path.includes('?') ? '&' : '?'
+  let offset = 0
+  for (;;) {
+    const page = await request<T[]>('GET', `${path}${separator}limit=${pageSize}&offset=${offset}`)
+    results.push(...page)
+    if (page.length < pageSize) break
+    offset += pageSize
+  }
+  return results
+}
+
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   delete: <T>(path: string) => request<T>('DELETE', path),
+  getAll: <T>(path: string, pageSize = DEFAULT_PAGE_SIZE) => requestAllPages<T>(path, pageSize),
 }
 
 /** Multipart form upload (file inputs) — omit Content-Type so the browser sets the boundary. */

@@ -9,7 +9,7 @@ class ApiClaimServiceImpl {
   private cache: Claim[] = []
 
   async load(): Promise<void> {
-    this.cache = await api.get<Claim[]>('/claims')
+    this.cache = await api.getAll<Claim>('/claims')
     emitMemoryDataChange()
   }
 

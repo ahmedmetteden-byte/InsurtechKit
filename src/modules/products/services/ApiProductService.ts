@@ -10,7 +10,7 @@ class ApiProductServiceImpl {
   private cache: Product[] = []
 
   async load(): Promise<void> {
-    this.cache = await api.get<Product[]>('/products')
+    this.cache = await api.getAll<Product>('/products')
     emitMemoryDataChange()
   }
 

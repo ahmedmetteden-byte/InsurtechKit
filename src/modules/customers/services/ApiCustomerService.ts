@@ -9,7 +9,7 @@ class ApiCustomerServiceImpl {
   private cache: Customer[] = []
 
   async load(): Promise<void> {
-    this.cache = await api.get<Customer[]>('/customers')
+    this.cache = await api.getAll<Customer>('/customers')
     emitMemoryDataChange()
   }
 

@@ -11,7 +11,7 @@ class ApiUserServiceImpl {
 
   async load(): Promise<void> {
     const [users, roles] = await Promise.all([
-      api.get<User[]>('/users'),
+      api.getAll<User>('/users'),
       api.get<Role[]>('/roles'),
     ])
     this.users = users

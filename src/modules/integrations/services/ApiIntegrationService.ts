@@ -13,7 +13,7 @@ class ApiIntegrationServiceImpl {
   private cache: Integration[] = []
 
   async load(): Promise<void> {
-    this.cache = await api.get<Integration[]>('/integrations')
+    this.cache = await api.getAll<Integration>('/integrations')
     emitMemoryDataChange()
   }
 

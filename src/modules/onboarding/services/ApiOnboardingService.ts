@@ -23,7 +23,7 @@ class ApiOnboardingServiceImpl {
   private cache: OnboardingApplication[] = []
 
   async load(): Promise<void> {
-    this.cache = await api.get<OnboardingApplication[]>('/onboarding/applications')
+    this.cache = await api.getAll<OnboardingApplication>('/onboarding/applications')
     emitMemoryDataChange()
   }
 

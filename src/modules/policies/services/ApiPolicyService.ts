@@ -9,7 +9,7 @@ class ApiPolicyServiceImpl {
   private cache: Policy[] = []
 
   async load(): Promise<void> {
-    this.cache = await api.get<Policy[]>('/policies')
+    this.cache = await api.getAll<Policy>('/policies')
     emitMemoryDataChange()
   }
 

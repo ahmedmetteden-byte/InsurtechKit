@@ -56,6 +56,17 @@ class ClaimRepository(BaseRepository[Claim]):
             self.db.scalars(select(Claim).where(Claim.policy_id == policy_id).order_by(Claim.created_at)).all()
         )
 
+    def get_by_policies(self, policy_ids: list[str]) -> list[Claim]:
+        """Batch form of get_by_policy — one query for a whole page of policies
+        instead of one query per policy, to avoid N+1 fan-out when listing."""
+        if not policy_ids:
+            return []
+        return list(
+            self.db.scalars(
+                select(Claim).where(Claim.policy_id.in_(policy_ids)).order_by(Claim.created_at)
+            ).all()
+        )
+
 
 class OnboardingApplicationRepository(BaseRepository[OnboardingApplication]):
     model = OnboardingApplication
@@ -74,7 +85,21 @@ class OnboardingDocumentRepository(BaseRepository[OnboardingDocument]):
     def get_by_application(self, application_id: str) -> list[OnboardingDocument]:
         return list(
             self.db.scalars(
-                select(OnboardingDocument).where(OnboardingDocument.application_id == application_id)
+                select(OnboardingDocument)
+                .where(OnboardingDocument.application_id == application_id)
+                .order_by(OnboardingDocument.created_at)
+            ).all()
+        )
+
+    def get_by_applications(self, application_ids: list[str]) -> list[OnboardingDocument]:
+        """Batch form of get_by_application — see ClaimRepository.get_by_policies."""
+        if not application_ids:
+            return []
+        return list(
+            self.db.scalars(
+                select(OnboardingDocument)
+                .where(OnboardingDocument.application_id.in_(application_ids))
+                .order_by(OnboardingDocument.created_at)
             ).all()
         )
 
@@ -92,6 +117,18 @@ class NotificationRepository(BaseRepository[Notification]):
             ).all()
         )
 
+    def get_by_related_many(self, related_type: str, related_ids: list[str]) -> list[Notification]:
+        """Batch form of get_by_related — see ClaimRepository.get_by_policies."""
+        if not related_ids:
+            return []
+        return list(
+            self.db.scalars(
+                select(Notification)
+                .where(Notification.related_type == related_type, Notification.related_id.in_(related_ids))
+                .order_by(Notification.created_at)
+            ).all()
+        )
+
 
 class PaymentRepository(BaseRepository[Payment]):
     model = Payment
@@ -102,6 +139,18 @@ class PaymentRepository(BaseRepository[Payment]):
             self.db.scalars(
                 select(Payment)
                 .where(Payment.related_type == related_type, Payment.related_id == related_id)
+                .order_by(Payment.created_at)
+            ).all()
+        )
+
+    def get_by_related_many(self, related_type: str, related_ids: list[str]) -> list[Payment]:
+        """Batch form of get_by_related — see ClaimRepository.get_by_policies."""
+        if not related_ids:
+            return []
+        return list(
+            self.db.scalars(
+                select(Payment)
+                .where(Payment.related_type == related_type, Payment.related_id.in_(related_ids))
                 .order_by(Payment.created_at)
             ).all()
         )

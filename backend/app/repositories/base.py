@@ -29,6 +29,13 @@ class BaseRepository(Generic[ModelT]):
     def get_by_id(self, id: str) -> ModelT | None:
         return self.db.get(self.model, id)
 
+    def get_by_ids(self, ids: list[str]) -> list[ModelT]:
+        """Batch form of get_by_id — one query for a set of ids instead of
+        one get_by_id() call per id, to avoid N+1 fan-out when listing."""
+        if not ids:
+            return []
+        return list(self.db.scalars(select(self.model).where(self.model.id.in_(ids))).all())
+
     def add(self, entity: ModelT) -> ModelT:
         self.db.add(entity)
         self.db.commit()

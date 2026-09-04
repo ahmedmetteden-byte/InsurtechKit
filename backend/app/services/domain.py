@@ -1,6 +1,7 @@
 """Service layer — business logic; repositories handle persistence only."""
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -511,22 +512,76 @@ class OnboardingService:
         )
 
     def _to_dict(self, application: OnboardingApplication) -> dict:
-        data = onboarding_application_to_dict(application)
-        data["policyNumber"] = self._policy_number(application)
-        data["documents"] = [
-            onboarding_document_to_dict(d) for d in self.documents.get_by_application(application.id)
-        ]
-        data["notifications"] = self.notifications.list_for("onboarding_application", application.id)
-        data["payments"] = self.payments.list_for("onboarding_application", application.id)
-        data["claims"] = (
-            [claim_to_dict(c) for c in self.claims_service.repo.get_by_policy(application.policy_id)]
-            if application.policy_id
-            else []
+        """Single-record shape — used by get()/update paths where one extra
+        round of queries for one application is normal. list() below avoids
+        calling this in a loop, since that would re-query per row (N+1)."""
+        documents = self.documents.get_by_application(application.id)
+        notifications = self.notifications.repo.get_by_related("onboarding_application", application.id)
+        payments = self.payments.repo.get_by_related("onboarding_application", application.id)
+        claims = (
+            self.claims_service.repo.get_by_policy(application.policy_id) if application.policy_id else []
         )
+        return self._shape_dict(
+            application, self._policy_number(application), documents, notifications, payments, claims
+        )
+
+    def _shape_dict(
+        self,
+        application: OnboardingApplication,
+        policy_number: str,
+        documents: list,
+        notifications: list,
+        payments: list,
+        claims: list,
+    ) -> dict:
+        data = onboarding_application_to_dict(application)
+        data["policyNumber"] = policy_number
+        data["documents"] = [onboarding_document_to_dict(d) for d in documents]
+        data["notifications"] = [notification_to_dict(n) for n in notifications]
+        data["payments"] = [payment_to_dict(p) for p in payments]
+        data["claims"] = [claim_to_dict(c) for c in claims]
         return data
 
     def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
-        return [self._to_dict(a) for a in self.repo.get_all(limit=limit, offset=offset)]
+        """Batch-loads policies/documents/notifications/payments/claims for the
+        whole page in 5 queries total, instead of _to_dict's 5-per-row — a
+        page of 100 applications used to mean up to 500 extra queries here."""
+        applications = self.repo.get_all(limit=limit, offset=offset)
+        if not applications:
+            return []
+
+        app_ids = [a.id for a in applications]
+        policy_ids = [a.policy_id for a in applications if a.policy_id]
+
+        policy_number_by_id = {p.id: p.policy_number for p in self.policies.get_by_ids(policy_ids)}
+
+        documents_by_app: dict[str, list] = defaultdict(list)
+        for d in self.documents.get_by_applications(app_ids):
+            documents_by_app[d.application_id].append(d)
+
+        notifications_by_app: dict[str, list] = defaultdict(list)
+        for n in self.notifications.repo.get_by_related_many("onboarding_application", app_ids):
+            notifications_by_app[n.related_id].append(n)
+
+        payments_by_app: dict[str, list] = defaultdict(list)
+        for p in self.payments.repo.get_by_related_many("onboarding_application", app_ids):
+            payments_by_app[p.related_id].append(p)
+
+        claims_by_policy: dict[str, list] = defaultdict(list)
+        for c in self.claims_service.repo.get_by_policies(policy_ids):
+            claims_by_policy[c.policy_id].append(c)
+
+        return [
+            self._shape_dict(
+                a,
+                policy_number_by_id.get(a.policy_id, "") if a.policy_id else "",
+                documents_by_app.get(a.id, []),
+                notifications_by_app.get(a.id, []),
+                payments_by_app.get(a.id, []),
+                claims_by_policy.get(a.policy_id, []) if a.policy_id else [],
+            )
+            for a in applications
+        ]
 
     def get(self, id: str) -> dict:
         a = self.repo.get_by_id(id)

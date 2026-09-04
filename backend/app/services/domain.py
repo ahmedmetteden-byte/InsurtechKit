@@ -95,8 +95,8 @@ class ProductService:
     def __init__(self, db: Session):
         self.repo = ProductRepository(db)
 
-    def list(self) -> list[dict]:
-        return [product_to_dict(p) for p in self.repo.get_all()]
+    def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        return [product_to_dict(p) for p in self.repo.get_all(limit=limit, offset=offset)]
 
     def list_active(self) -> list[dict]:
         return [product_to_dict(p) for p in self.repo.get_all() if p.active]
@@ -146,8 +146,8 @@ class CustomerService:
     def __init__(self, db: Session):
         self.repo = CustomerRepository(db)
 
-    def list(self) -> list[dict]:
-        return [customer_to_dict(c) for c in self.repo.get_all()]
+    def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        return [customer_to_dict(c) for c in self.repo.get_all(limit=limit, offset=offset)]
 
     def get(self, id: str) -> dict:
         c = self.repo.get_by_id(id)
@@ -201,8 +201,8 @@ class PolicyService:
         self.products = ProductRepository(db)
         self.branding = BrandingRepository(db)
 
-    def list(self) -> list[dict]:
-        return [policy_to_dict(p) for p in self.repo.get_all()]
+    def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        return [policy_to_dict(p) for p in self.repo.get_all(limit=limit, offset=offset)]
 
     def get(self, id: str) -> dict:
         p = self.repo.get_by_id(id)
@@ -263,8 +263,8 @@ class ClaimService:
         self.customers = CustomerRepository(db)
         self.notifications = NotificationService(db)
 
-    def list(self) -> list[dict]:
-        return [claim_to_dict(c) for c in self.repo.get_all()]
+    def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        return [claim_to_dict(c) for c in self.repo.get_all(limit=limit, offset=offset)]
 
     def get(self, id: str) -> dict:
         c = self.repo.get_by_id(id)
@@ -525,8 +525,8 @@ class OnboardingService:
         )
         return data
 
-    def list(self) -> list[dict]:
-        return [self._to_dict(a) for a in self.repo.get_all()]
+    def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        return [self._to_dict(a) for a in self.repo.get_all(limit=limit, offset=offset)]
 
     def get(self, id: str) -> dict:
         a = self.repo.get_by_id(id)
@@ -886,8 +886,8 @@ class UserService:
         self.roles = RoleRepository(db)
         self.permissions = PermissionRepository(db)
 
-    def list(self) -> list[dict]:
-        return [user_to_dict(u) for u in self.repo.get_all()]
+    def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        return [user_to_dict(u) for u in self.repo.get_all(limit=limit, offset=offset)]
 
     def get(self, id: str) -> dict:
         u = self.repo.get_by_id(id)
@@ -961,8 +961,8 @@ class IntegrationService:
     def __init__(self, db: Session):
         self.repo = IntegrationRepository(db)
 
-    def list(self) -> list[dict]:
-        return [integration_to_dict(i) for i in self.repo.get_all()]
+    def list(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        return [integration_to_dict(i) for i in self.repo.get_all(limit=limit, offset=offset)]
 
     def get(self, id: str) -> dict:
         i = self.repo.get_by_id(id)

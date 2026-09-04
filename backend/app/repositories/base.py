@@ -20,8 +20,11 @@ class BaseRepository(Generic[ModelT]):
     def new_id(self) -> str:
         return f"{self.id_prefix}-{uuid4()}"
 
-    def get_all(self) -> list[ModelT]:
-        return list(self.db.scalars(select(self.model)).all())
+    def get_all(self, limit: int | None = None, offset: int = 0) -> list[ModelT]:
+        query = select(self.model)
+        if limit is not None:
+            query = query.offset(offset).limit(limit)
+        return list(self.db.scalars(query).all())
 
     def get_by_id(self, id: str) -> ModelT | None:
         return self.db.get(self.model, id)

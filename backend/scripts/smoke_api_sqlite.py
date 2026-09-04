@@ -104,6 +104,20 @@ print("create product", created.status_code, created.json().get("code"))
 assert created.status_code == 201
 pid = created.json()["id"]
 
+# List endpoints are paginated (limit/offset) — no longer return every row unconditionally
+products_capped = client.get("/api/v1/products?limit=1", headers=headers)
+print("products limit=1", products_capped.status_code, len(products_capped.json()))
+assert products_capped.status_code == 200
+assert len(products_capped.json()) == 1
+
+products_bad_limit = client.get("/api/v1/products?limit=0", headers=headers)
+print("products limit=0", products_bad_limit.status_code)
+assert products_bad_limit.status_code == 400
+
+products_over_max = client.get("/api/v1/products?limit=501", headers=headers)
+print("products limit=501", products_over_max.status_code)
+assert products_over_max.status_code == 400
+
 # Viewer cannot create products
 viewer_login = client.post(
     "/api/v1/auth/login",

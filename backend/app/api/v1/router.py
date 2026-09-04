@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, Response
 
 from app.api.v1.auth import router as auth_router
 from app.dependencies.auth import get_user_permissions, require_permission
+from app.dependencies.pagination import PageParams, pagination_params
 from app.dependencies.services import (
     get_branding_service,
     get_claim_service,
@@ -80,10 +81,11 @@ router.include_router(auth_router)
 
 @router.get("/products", response_model=list[ProductRead], tags=["Products"])
 def list_products(
+    pagination: PageParams = Depends(pagination_params),
     _: User = Depends(require_permission("products.view")),
     service: ProductService = Depends(get_product_service),
 ):
-    return service.list()
+    return service.list(limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/products/{id}", response_model=ProductRead, tags=["Products"])
@@ -128,10 +130,11 @@ def delete_product(
 
 @router.get("/customers", response_model=list[CustomerRead], tags=["Customers"])
 def list_customers(
+    pagination: PageParams = Depends(pagination_params),
     _: User = Depends(require_permission("customers.view")),
     service: CustomerService = Depends(get_customer_service),
 ):
-    return service.list()
+    return service.list(limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/customers/{id}", response_model=CustomerRead, tags=["Customers"])
@@ -176,10 +179,11 @@ def delete_customer(
 
 @router.get("/policies", response_model=list[PolicyRead], tags=["Policies"])
 def list_policies(
+    pagination: PageParams = Depends(pagination_params),
     _: User = Depends(require_permission("policies.view")),
     service: PolicyService = Depends(get_policy_service),
 ):
-    return service.list()
+    return service.list(limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/policies/{id}", response_model=PolicyRead, tags=["Policies"])
@@ -238,10 +242,11 @@ def download_policy_certificate(
 
 @router.get("/claims", response_model=list[ClaimRead], tags=["Claims"])
 def list_claims(
+    pagination: PageParams = Depends(pagination_params),
     _: User = Depends(require_permission("claims.view")),
     service: ClaimService = Depends(get_claim_service),
 ):
-    return service.list()
+    return service.list(limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/claims/{id}", response_model=ClaimRead, tags=["Claims"])
@@ -438,10 +443,11 @@ def download_onboarding_payment_receipt(
 
 @router.get("/onboarding/applications", response_model=list[OnboardingApplicationRead], tags=["Onboarding"])
 def list_onboarding_applications(
+    pagination: PageParams = Depends(pagination_params),
     _: User = Depends(require_permission("onboarding.view")),
     service: OnboardingService = Depends(get_onboarding_service),
 ):
-    return service.list()
+    return service.list(limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/onboarding/applications/{id}", response_model=OnboardingApplicationRead, tags=["Onboarding"])
@@ -497,10 +503,11 @@ def update_onboarding_payment(
 
 @router.get("/users", response_model=list[UserRead], tags=["Users"])
 def list_users(
+    pagination: PageParams = Depends(pagination_params),
     _: User = Depends(require_permission("users.manage")),
     service: UserService = Depends(get_user_service),
 ):
-    return service.list()
+    return service.list(limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/users/{id}", response_model=UserRead, tags=["Users"])
@@ -570,10 +577,11 @@ def list_permissions(
 
 @router.get("/integrations", response_model=list[IntegrationRead], tags=["Integrations"])
 def list_integrations(
+    pagination: PageParams = Depends(pagination_params),
     _: User = Depends(require_permission("settings.manage")),
     service: IntegrationService = Depends(get_integration_service),
 ):
-    return service.list()
+    return service.list(limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/integrations/{id}", response_model=IntegrationRead, tags=["Integrations"])

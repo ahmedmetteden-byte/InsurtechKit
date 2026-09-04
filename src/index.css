@@ -70,7 +70,14 @@
 /* ── Auto Layout utilities ──────────────────────────────────────────────────
    Mirrors Figma Auto Layout. Sizing is always content-driven via padding +
    gap. Never use fixed width/height on these elements directly.
+
+   Wrapped in Tailwind's `components` cascade layer so Tailwind utility
+   classes (e.g. `hidden`, `md:flex` on a Row) always win regardless of
+   source order — without this, equal-specificity rules like `.al-row` here
+   and `.hidden`/`.md:flex` from Tailwind resolve by file position, which
+   silently breaks responsive show/hide on these components.
    ─────────────────────────────────────────────────────────────────────────── */
+@layer components {
 
 /* Button base */
 .al-btn {
@@ -209,6 +216,8 @@
   color: rgba(255,255,255,0.7);
 }
 .al-eyebrow-light::before { background: rgba(255,255,255,0.6); }
+
+} /* end @layer components */
 
 
 /* ── Base resets ────────────────────────────────────────────────────────────── */

@@ -127,9 +127,11 @@ export default function NavBar({ current, onNavigate, onAdminClick, onMobileClic
           </Button>
         </Row>
 
-        {/* Mobile hamburger */}
-        <button className="md:hidden" onClick={() => setMobileOpen(o => !o)}
-          style={{ width: 40, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#475569', flexShrink: 0 }}>
+        {/* Mobile hamburger — display/alignment come from the className (not
+            inline style) so `md:hidden` can actually win at desktop widths;
+            an inline `display` can never be overridden by any stylesheet rule. */}
+        <button className="flex md:hidden items-center justify-center" onClick={() => setMobileOpen(o => !o)}
+          style={{ width: 40, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'white', cursor: 'pointer', color: '#475569', flexShrink: 0 }}>
           <div style={{ width: 20, height: 20 }}>{mobileOpen ? Icon.x : Icon.menu}</div>
         </button>
       </div>

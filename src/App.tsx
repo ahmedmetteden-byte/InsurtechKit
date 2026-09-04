@@ -47,14 +47,25 @@ const mobileScreens: { id: MobileScreen; label: string; feature?: FeatureKey }[]
   { id: 'claims',     label: '05 Claims', feature: 'claims' },
 ]
 
+/** `?view=mobile` or `?view=admin` deep-links straight past the cover page —
+ *  lets a demo link go directly to the mobile screens or admin console. */
+function initialView(): { showCover: boolean; admin: boolean; mobile: boolean } {
+  const view = new URLSearchParams(window.location.search).get('view')
+  return {
+    showCover: view !== 'mobile' && view !== 'admin',
+    admin: view === 'admin',
+    mobile: view === 'mobile',
+  }
+}
+
 export default function App() {
   // Start on the cover page; buyer clicks "Open Kit" to enter the website
-  const [showCover, setShowCover] = useState(true)
+  const [showCover, setShowCover] = useState(() => initialView().showCover)
   const [page, setPage] = useState<Page>('home')
   const [quoteCategory, setQuoteCategory] = useState<string | undefined>()
   const [quoteSummary, setQuoteSummary] = useState<QuoteSummary | undefined>()
-  const [admin, setAdmin] = useState(false)
-  const [mobile, setMobile] = useState(false)
+  const [admin, setAdmin] = useState(() => initialView().admin)
+  const [mobile, setMobile] = useState(() => initialView().mobile)
   const [mobileScreen, setMobileScreen] = useState<MobileScreen>('onboarding')
   const { isEnabled } = useFeatures()
   const { isAuthenticated, isApiAuth, isReady } = useAuth()

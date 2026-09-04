@@ -176,7 +176,7 @@ export default function ClaimsPage({ onNavigate }: Props) {
         <div style={{ position: 'absolute', top: '-20%', right: '0', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(29,78,216,0.25) 0%, transparent 65%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1.2px)', backgroundSize: '28px 28px', pointerEvents: 'none' }} />
 
-        <div className="max-w-[1200px] mx-auto" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 60, alignItems: 'center', position: 'relative' }}>
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-[1fr_400px]" style={{ gap: 60, alignItems: 'center', position: 'relative' }}>
           <div>
             <Eyebrow light>Claims Process</Eyebrow>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(30px,4vw,52px)', letterSpacing: '-0.045em', color: 'white', lineHeight: 1.05, marginBottom: 18 }}>
@@ -246,7 +246,7 @@ export default function ClaimsPage({ onNavigate }: Props) {
 
           {/* ── Active step detail ── */}
           <div style={{ background: step.bg, borderRadius: 24, border: `2px solid ${step.border}`, padding: '40px 44px', transition: 'all 0.3s' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48 }}>
+            <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 48 }}>
               {/* Left */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
@@ -315,7 +315,7 @@ export default function ClaimsPage({ onNavigate }: Props) {
             <Eyebrow>Full Process</Eyebrow>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px,2.8vw,34px)', fontWeight: 800, letterSpacing: '-0.03em', color: '#0F172A', lineHeight: 1.15, marginBottom: 12 }}>All six steps at a glance</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 0 }}>
             {steps.map((s, i) => (
               <div key={s.num} style={{ padding: '28px', borderRight: (i + 1) % 3 !== 0 ? '1px solid var(--border)' : 'none', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -347,7 +347,7 @@ export default function ClaimsPage({ onNavigate }: Props) {
               How to maximise your claim
             </h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 20 }}>
             {[
               { emoji: '📸', title: 'Take comprehensive photos', body: 'Photograph from 4+ angles. Close-up damage shots AND wide scene views. Include timestamps if your phone supports it. Photos taken in the first hour carry the most evidential weight.' },
               { emoji: '🚔', title: 'Always file a police report', body: 'For road accidents, get a police/FRSC report within 24 hours. This is legally required for comprehensive claims and significantly accelerates processing.' },
@@ -368,7 +368,7 @@ export default function ClaimsPage({ onNavigate }: Props) {
 
       {/* ── Rights + Contacts ────────────────────────────────── */}
       <section style={{ background: '#060F2A', padding: '80px 24px' }}>
-        <div className="max-w-[1200px] mx-auto" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60 }}>
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2" style={{ gap: 60 }}>
           <div>
             <Eyebrow light>Policyholder Rights</Eyebrow>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', color: 'white', lineHeight: 1.2, marginBottom: 16 }}>

@@ -67,7 +67,7 @@ function Hero({ onNavigate }: Props) {
       {/* Dot field */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1.2px)', backgroundSize: '28px 28px', pointerEvents: 'none' }} />
 
-      <div className="max-w-[1200px] mx-auto px-6 w-full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, minHeight: '92vh', alignItems: 'center', paddingTop: 80, paddingBottom: 80, position: 'relative' }}>
+      <div className="max-w-[1200px] mx-auto px-6 w-full grid grid-cols-1 md:grid-cols-2" style={{ gap: 0, minHeight: '92vh', alignItems: 'center', paddingTop: 80, paddingBottom: 80, position: 'relative' }}>
 
         {/* ── LEFT copy ─────────────────────── */}
         <div style={{ paddingRight: 40 }}>
@@ -187,7 +187,7 @@ function TrustBand() {
   ]
   return (
     <section style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '0 24px' }}>
-      <div className="max-w-[1200px] mx-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0 }}>
+      <div className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-5" style={{ gap: 0 }}>
         {stats.map((s, i) => (
           <div key={s.label} style={{ padding: '28px 20px', textAlign: 'center', borderRight: i < 4 ? '1px solid var(--border)' : 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
@@ -257,7 +257,7 @@ function CoveragePlans({ onNavigate }: Props) {
           <Lead center>NAICOM-approved plans, digital certificates in 5 minutes, 24/7 claims support.</Lead>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 24 }}>
           {plans.map(p => (
             <div
               key={p.id}
@@ -365,7 +365,7 @@ function HowItWorks({ onNavigate }: Props) {
   return (
     <section style={{ background: 'white', padding: '100px 24px', overflow: 'hidden' }}>
       <div className="max-w-[1200px] mx-auto">
-        <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 80, alignItems: 'center' }}>
+        <div className="grid grid-cols-1 md:grid-cols-[380px_1fr]" style={{ gap: 80, alignItems: 'center' }}>
 
           {/* Left sticky text */}
           <div>
@@ -470,7 +470,7 @@ function Testimonials() {
           <Lead center>Real policyholders, real outcomes. Unedited reviews from Nigerians who've claimed.</Lead>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+        <div className="grid grid-cols-1 md:grid-cols-4" style={{ gap: 20 }}>
           {reviews.map(r => (
             <div key={r.name} style={{ background: 'white', borderRadius: 20, padding: '24px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 0 }}>
               {/* Stars */}
@@ -512,7 +512,7 @@ function AppBanner({ onNavigate: _onNavigate }: Props) {
   return (
     <section style={{ background: '#060F2A', padding: '80px 24px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', right: '5%', top: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(29,78,216,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />
-      <div className="max-w-[1200px] mx-auto" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', position: 'relative' }}>
+      <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2" style={{ gap: 60, alignItems: 'center', position: 'relative' }}>
         <div>
           <Eyebrow>Mobile App</Eyebrow>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(26px,3vw,40px)', letterSpacing: '-0.035em', color: 'white', lineHeight: 1.15, marginBottom: 18 }}>

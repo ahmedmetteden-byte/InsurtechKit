@@ -293,7 +293,7 @@ function FAQ({ color }: { color: string }) {
 
   return (
     <section style={{ background: '#F8FAFC', padding: '80px 24px' }}>
-      <div className="max-w-[1200px] mx-auto" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 80, alignItems: 'start' }}>
+      <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-[1fr_2fr]" style={{ gap: 80, alignItems: 'start' }}>
         <div style={{ position: 'sticky', top: 96 }}>
           <Eyebrow>FAQ</Eyebrow>
           <H2>Common questions answered</H2>
@@ -394,7 +394,7 @@ export default function ProductPage({ onNavigate, onRequestQuote }: Props) {
 
       {/* Coverage details + Calculator */}
       <section style={{ background: 'white', padding: '60px 24px 80px' }}>
-        <div className="max-w-[1200px] mx-auto" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 56, alignItems: 'start' }}>
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-[1fr_400px]" style={{ gap: 56, alignItems: 'start' }}>
 
           {/* Left: coverage breakdown */}
           <div>

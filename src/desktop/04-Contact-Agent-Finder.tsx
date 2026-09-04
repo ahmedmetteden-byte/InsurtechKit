@@ -299,7 +299,7 @@ export default function ContactPage({ onNavigate: _onNavigate }: Props) {
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 16, color: '#64748B', lineHeight: 1.7 }}>Four offices. 96 agents. Nationwide coverage.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 40, alignItems: 'start' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-10 items-start">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {offices.map(o => (
                 <button key={o.id} onClick={() => setSelectedOffice(o.id)}
